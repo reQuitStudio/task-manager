@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Task Manager</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -14,89 +16,162 @@
   <div class="container">
     <header>
       <div class="theme-toggle">
-        <button id="theme-toggle">🌓</button>
+        <button id="theme-toggle"><i class="fas fa-moon"></i></button>
       </div>
       <nav>
         <ul>
-          <li><a href="#profile">Профиль</a></li>
-          <li><a href="#tasks">Задачи</a></li>
-          <li><a href="#messenger">Мессенджер</a></li>
-          <li><a href="#top">Топ</a></li>
-          <li><a href="#top-week">Топ недели</a></li>
-          <li><a href="#polls">Голосования</a></li>
-          <li><a href="#shop">Магазин</a></li>
-          <li><a href="#admin">Админ панель</a></li>
+          <li><a href="#profile"><i class="fas fa-user"></i> Профиль</a></li>
+          <li><a href="#tasks"><i class="fas fa-tasks"></i> Задачи</a></li>
+          <li><a href="#messenger"><i class="fas fa-comment-dots"></i> Мессенджер</a></li>
+          <li><a href="#top"><i class="fas fa-trophy"></i> Топ</a></li>
+          <li><a href="#top-week"><i class="fas fa-calendar-week"></i> Топ недели</a></li>
+          <li><a href="#polls"><i class="fas fa-poll"></i> Голосования</a></li>
+          <li><a href="#shop"><i class="fas fa-shopping-cart"></i> Магазин</a></li>
+          <li><a href="#admin"><i class="fas fa-cog"></i> Админ панель</a></li>
+          <li><a href="#" id="logout-btn" style="display: none;"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>
         </ul>
       </nav>
     </header>
     <main>
+      <!-- Форма входа -->
+      <section id="login" class="section active">
+        <div class="login-container">
+          <h2><i class="fas fa-sign-in-alt"></i> Вход в систему</h2>
+          <div class="form-group">
+            <label for="login-email"><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" id="login-email" placeholder="example@mail.com" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password"><i class="fas fa-lock"></i> Пароль</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button id="login-btn" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Войти</button>
+          <p class="form-switch">Нет аккаунта? <a href="#" id="show-register">Зарегистрироваться</a></p>
+          <div id="login-error" class="error-message"></div>
+        </div>
+      </section>
+
+      <!-- Форма регистрации -->
+      <section id="register" class="section">
+        <div class="login-container">
+          <h2><i class="fas fa-user-plus"></i> Регистрация</h2>
+          <div class="form-group">
+            <label for="register-email"><i class="fas fa-envelope"></i> Email</label>
+            <input type="email" id="register-email" placeholder="example@mail.com" required>
+          </div>
+          <div class="form-group">
+            <label for="register-password"><i class="fas fa-lock"></i> Пароль</label>
+            <input type="password" id="register-password" required>
+          </div>
+          <button id="register-btn" class="btn btn-primary"><i class="fas fa-user-plus"></i> Зарегистрироваться</button>
+          <p class="form-switch">Уже есть аккаунт? <a href="#" id="show-login">Войти</a></p>
+          <div id="register-error" class="error-message"></div>
+        </div>
+      </section>
+
       <!-- Профиль -->
-      <section id="profile" class="section active">
+      <section id="profile" class="section">
         <div class="profile-card">
-          <img id="profile-avatar" src="https://via.placeholder.com/150" alt="Аватар" class="avatar">
+          <div class="avatar-container">
+            <img id="profile-avatar" src="https://via.placeholder.com/150" alt="Аватар" class="avatar">
+            <button class="edit-avatar" onclick="document.getElementById('avatar-upload').click()">
+              <i class="fas fa-camera"></i>
+            </button>
+            <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+          </div>
           <h2 id="profile-name">Имя Пользователя</h2>
-          <p>ID: <span id="profile-id">12345</span></p>
-          <div class="stats">
-            <div class="stat-item">
-              <span>Выполнено</span>
-              <span id="completed-tasks">5</span>
+          <p class="profile-id">ID: <span id="profile-id">12345</span></p>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+              <div class="stat-value" id="completed-tasks">5</div>
+              <div class="stat-label">Выполнено</div>
             </div>
-            <div class="stat-item">
-              <span>Просрочено</span>
-              <span id="overdue-tasks">1</span>
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+              <div class="stat-value" id="overdue-tasks">1</div>
+              <div class="stat-label">Просрочено</div>
             </div>
-            <div class="stat-item">
-              <span>Ожидаются</span>
-              <span id="pending-tasks">3</span>
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+              <div class="stat-value" id="pending-tasks">3</div>
+              <div class="stat-label">Ожидаются</div>
             </div>
           </div>
-          <p>Уровень опыта: <span id="experience-level">3</span></p>
-          <p>Стрик: <span id="streak">7 дней</span></p>
-          <p>Поинты: <span id="points">150</span></p>
-          <div class="description">
-            <strong>Описание:</strong>
-            <span id="description">Опытный разработчик с 5+ годами веб-разработки</span>
+          <div class="progress-container">
+            <div class="progress-label">Уровень опыта</div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="experience-level" style="width: 30%"></div>
+            </div>
+            <div class="progress-value">3/5</div>
           </div>
-          <div class="professions">
-            <strong>Профессии:</strong>
-            <span id="professions">Frontend, Backend, DevOps</span>
+          <div class="profile-section">
+            <div class="section-title"><i class="fas fa-streak"></i> Стрик</div>
+            <div class="streak-value" id="streak">7 дней</div>
           </div>
-          <button id="edit-profile" class="btn">Редактировать профиль</button>
+          <div class="profile-section">
+            <div class="section-title"><i class="fas fa-coins"></i> Поинты</div>
+            <div class="points-value" id="points">150</div>
+          </div>
+          <div class="profile-section">
+            <div class="section-title"><i class="fas fa-file-alt"></i> Описание</div>
+            <div class="description" id="description">Опытный разработчик с 5+ годами веб-разработки</div>
+          </div>
+          <div class="profile-section">
+            <div class="section-title"><i class="fas fa-briefcase"></i> Профессии</div>
+            <div class="professions" id="professions">Frontend, Backend, DevOps</div>
+          </div>
+          <div class="profile-actions">
+            <button class="btn btn-secondary" onclick="editProfile()"><i class="fas fa-edit"></i> Редактировать профиль</button>
+            <button class="btn btn-secondary" onclick="changePassword()"><i class="fas fa-key"></i> Сменить пароль</button>
+          </div>
         </div>
       </section>
 
       <!-- Задачи -->
       <section id="tasks" class="section">
         <div class="task-header">
-          <h2>Мои задачи</h2>
-          <select id="task-sort">
-            <option value="newest">Новые</option>
-            <option value="oldest">Старые</option>
-            <option value="deadline">Срок выполнения</option>
-          </select>
+          <h2><i class="fas fa-tasks"></i> Мои задачи</h2>
+          <div class="task-filters">
+            <select id="task-sort">
+              <option value="newest">Новые</option>
+              <option value="oldest">Старые</option>
+              <option value="deadline">Срок выполнения</option>
+            </select>
+            <button class="btn btn-primary" onclick="addTask()"><i class="fas fa-plus"></i> Новая задача</button>
+          </div>
         </div>
-        <div id="tasks-list" class="task-list">
-          <!-- Задачи будут загружаться сюда -->
-        </div>
+        <div id="tasks-list" class="task-list"></div>
       </section>
 
       <!-- Мессенджер -->
       <section id="messenger" class="section">
         <div class="messenger-container">
           <div class="contacts-list">
-            <h3>Контакты</h3>
+            <div class="contacts-header">
+              <h3><i class="fas fa-users"></i> Контакты</h3>
+              <input type="text" id="search-contact" placeholder="Поиск...">
+            </div>
             <div id="contacts-list"></div>
           </div>
           <div class="chat-window">
             <div class="chat-header">
-              <h3 id="chat-title">Чат с пользователем</h3>
+              <div class="chat-user">
+                <img src="https://via.placeholder.com/40" alt="Аватар" class="chat-avatar">
+                <h3 id="chat-title">Чат с пользователем</h3>
+              </div>
+              <div class="chat-actions">
+                <button><i class="fas fa-video"></i></button>
+                <button><i class="fas fa-phone"></i></button>
+                <button><i class="fas fa-ellipsis-h"></i></button>
+              </div>
             </div>
             <div class="messages" id="messages-container"></div>
             <div class="input-area">
+              <button class="file-btn" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
               <input type="file" id="file-input" style="display: none;">
               <input type="text" id="message-input" placeholder="Сообщение...">
-              <button onclick="document.getElementById('file-input').click()">📎</button>
-              <button onclick="sendMessage()">Отправить</button>
+              <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
           </div>
         </div>
@@ -104,11 +179,14 @@
 
       <!-- Топ -->
       <section id="top" class="section">
-        <div class="top-tabs">
-          <button class="top-tab active" data-tab="completed">Выполненные задачи</button>
-          <button class="top-tab" data-tab="streak">Стрик</button>
-          <button class="top-tab" data-tab="experience">Уровень опыта</button>
-          <button class="top-tab" data-tab="points">Поинты</button>
+        <div class="top-header">
+          <h2><i class="fas fa-trophy"></i> Топ пользователей</h2>
+          <div class="top-tabs">
+            <button class="top-tab active" data-tab="completed"><i class="fas fa-check-circle"></i> Выполненные задачи</button>
+            <button class="top-tab" data-tab="streak"><i class="fas fa-streak"></i> Стрик</button>
+            <button class="top-tab" data-tab="experience"><i class="fas fa-graduation-cap"></i> Уровень опыта</button>
+            <button class="top-tab" data-tab="points"><i class="fas fa-coins"></i> Поинты</button>
+          </div>
         </div>
         <div class="top-content">
           <div class="top-table" id="top-completed">
@@ -128,51 +206,61 @@
 
       <!-- Топ недели -->
       <section id="top-week" class="section">
-        <h2>Топ за неделю</h2>
+        <div class="top-header">
+          <h2><i class="fas fa-calendar-week"></i> Топ за неделю</h2>
+        </div>
         <div class="top-table" id="top-week-table"></div>
       </section>
 
       <!-- Голосования -->
       <section id="polls" class="section">
-        <h2>Голосования</h2>
+        <div class="polls-header">
+          <h2><i class="fas fa-poll"></i> Голосования</h2>
+          <button class="btn btn-primary" onclick="createPoll()"><i class="fas fa-plus"></i> Новое голосование</button>
+        </div>
         <div id="polls-list"></div>
       </section>
 
       <!-- Магазин -->
       <section id="shop" class="section">
-        <h2>Магазин аксессуаров</h2>
+        <div class="shop-header">
+          <h2><i class="fas fa-shopping-cart"></i> Магазин аксессуаров</h2>
+        </div>
         <div id="shop-items" class="shop-items"></div>
       </section>
 
       <!-- Админ панель -->
       <section id="admin" class="section">
-        <h2>Админ панель</h2>
-        <div class="admin-tabs">
-          <button class="admin-tab active" data-tab="users">Сотрудники</button>
-          <button class="admin-tab" data-tab="tasks">Задачи</button>
-          <button class="admin-tab" data-tab="polls">Голосования</button>
-          <button class="admin-tab" data-tab="shop">Магазин</button>
+        <div class="admin-header">
+          <h2><i class="fas fa-cog"></i> Админ панель</h2>
+          <div class="admin-tabs">
+            <button class="admin-tab active" data-tab="users"><i class="fas fa-users"></i> Сотрудники</button>
+            <button class="admin-tab" data-tab="tasks"><i class="fas fa-tasks"></i> Задачи</button>
+            <button class="admin-tab" data-tab="polls"><i class="fas fa-poll"></i> Голосования</button>
+            <button class="admin-tab" data-tab="shop"><i class="fas fa-shopping-cart"></i> Магазин</button>
+          </div>
         </div>
         <div class="admin-content">
           <div id="admin-users" class="admin-tab-content active">
-            <h3>Управление сотрудниками</h3>
             <div class="admin-form">
               <input type="email" id="admin-email" placeholder="Email сотрудника">
               <input type="password" id="admin-password" placeholder="Пароль">
-              <button onclick="registerUser()">Добавить сотрудника</button>
-              <button onclick="resetPassword()">Сбросить пароль</button>
-              <button onclick="logoutAllSessions()">Разлогинить все сессии</button>
+              <button class="btn btn-primary" onclick="registerUser()"><i class="fas fa-user-plus"></i> Добавить сотрудника</button>
+              <button class="btn btn-secondary" onclick="resetPassword()"><i class="fas fa-key"></i> Сбросить пароль</button>
             </div>
-            <div id="users-list"></div>
+            <div class="admin-list" id="users-list"></div>
           </div>
           <div id="admin-tasks" class="admin-tab-content" style="display: none;">
-            <!-- Управление задачами -->
+            <h3>Управление задачами</h3>
+            <p>Функционал в разработке</p>
           </div>
           <div id="admin-polls" class="admin-tab-content" style="display: none;">
-            <!-- Создание голосований -->
+            <h3>Управление голосованиями</h3>
+            <p>Функционал в разработке</p>
           </div>
           <div id="admin-shop" class="admin-tab-content" style="display: none;">
-            <!-- Управление магазином -->
+            <h3>Управление магазином</h3>
+            <p>Функционал в разработке</p>
           </div>
         </div>
       </section>

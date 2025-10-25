@@ -1,4 +1,4 @@
-// Firebase Configuration (Замените на свои данные из Firebase Console)
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD515FOTmwOsB32a-uC1bHAvvq6A0KnvEg",
   authDomain: "requit-tasks.firebaseapp.com",
@@ -23,6 +23,8 @@ themeToggle.addEventListener('click', () => {
 // Загрузка сохраненной темы
 if (localStorage.getItem('theme') === 'dark') {
   document.body.classList.add('dark-theme');
+} else {
+  document.body.classList.remove('dark-theme');
 }
 
 // Обработка хэша при загрузке и изменении
@@ -50,17 +52,51 @@ function handleHash() {
   if (hash === 'admin') loadAdmin();
 }
 
-window.addEventListener('hashchange', handleHash);
-window.addEventListener('load', handleHash);
+// Показать форму входа
+function showLoginForm() {
+  document.getElementById('login').classList.add('active');
+  document.getElementById('register').classList.remove('active');
+  window.location.hash = 'login';
+}
+
+// Показать форму регистрации
+function showRegisterForm() {
+  document.getElementById('register').classList.add('active');
+  document.getElementById('login').classList.remove('active');
+  window.location.hash = 'register';
+}
 
 // Аутентификация
 auth.onAuthStateChanged(user => {
   if (!user) {
-    // Перенаправление на страницу входа (в реальном проекте добавить login.html)
+    // Перенаправление на страницу входа
+    document.getElementById('login').classList.add('active');
+    document.getElementById('logout-btn').style.display = 'none';
+    document.querySelectorAll('.section').forEach(section => {
+      if (section.id !== 'login' && section.id !== 'register') {
+        section.classList.remove('active');
+      }
+    });
     window.location.hash = 'login';
   } else {
+    document.getElementById('logout-btn').style.display = 'inline-flex';
     handleHash();
   }
+});
+
+// Выход из системы
+document.getElementById('logout-btn').addEventListener('click', () => {
+  auth.signOut().then(() => {
+    document.getElementById('login').classList.add('active');
+    document.querySelectorAll('.section').forEach(section => {
+      if (section.id !== 'login' && section.id !== 'register') {
+        section.classList.remove('active');
+      }
+    });
+    window.location.hash = 'login';
+  }).catch(error => {
+    console.error("Ошибка выхода: ", error);
+  });
 });
 
 // Функции для работы с данными
@@ -81,7 +117,7 @@ function loadProfile() {
     document.getElementById('completed-tasks').textContent = userData.completedTasks || 0;
     document.getElementById('overdue-tasks').textContent = userData.overdueTasks || 0;
     document.getElementById('pending-tasks').textContent = userData.pendingTasks || 0;
-    document.getElementById('experience-level').textContent = userData.experienceLevel || 1;
+    document.getElementById('experience-level').style.width = `${Math.min(userData.experienceLevel * 20, 100)}%`;
     document.getElementById('streak').textContent = `${userData.streak || 0} дней`;
     document.getElementById('points').textContent = userData.points || 0;
     document.getElementById('description').textContent = userData.description || 'Описание не указано';
@@ -135,13 +171,20 @@ function loadMessenger() {
         <img src="${user.avatarUrl || 'https://via.placeholder.com/40'}" alt="${user.name}">
         <span>${user.name}</span>
       `;
+      contactElement.dataset.uid = user.uid;
       contactElement.onclick = () => openChat(user.uid, user.name);
       contactsList.appendChild(contactElement);
     });
   });
 }
 
+let currentChatUid = null;
+
 function openChat(uid, name) {
+  currentChatUid = uid;
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+  
   document.getElementById('chat-title').textContent = name;
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '';
@@ -168,14 +211,13 @@ function openChat(uid, name) {
 function sendMessage() {
   const currentUser = auth.currentUser;
   const messageInput = document.getElementById('message-input');
-  const chatTitle = document.getElementById('chat-title').textContent;
-  const targetUid = getCurrentChatUid(); // Реализуйте логику получения UID собеседника
+  const messageText = messageInput.value.trim();
   
-  if (!messageInput.value.trim() || !targetUid) return;
+  if (!messageText || !currentChatUid) return;
   
-  const messageRef = db.ref(`chats/${currentUser.uid}_${targetUid}`).push();
+  const messageRef = db.ref(`chats/${currentUser.uid}_${currentChatUid}`).push();
   messageRef.set({
-    text: messageInput.value,
+    text: messageText,
     senderId: currentUser.uid,
     timestamp: Date.now()
   });
@@ -277,15 +319,57 @@ function loadPolls() {
         <div class="poll-options">
           ${poll.options.map((option, index) => `
             <div class="poll-option">
-              <input type="radio" id="option-${index}" name="poll-${poll.id}">
-              <label for="option-${index}">${option.text} (${option.votes} голосов)</label>
+              <input type="radio" id="option-${poll.id}-${index}" name="poll-${poll.id}" value="${index}">
+              <label for="option-${poll.id}-${index}">${option.text} (${option.votes} голосов)</label>
             </div>
           `).join('')}
         </div>
-        <button onclick="vote('${poll.id}', ${currentOption})">Проголосовать</button>
+        <button onclick="vote('${poll.id}')">Проголосовать</button>
       `;
       pollsList.appendChild(pollElement);
     });
+  });
+}
+
+function vote(pollId) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert("Вы должны быть авторизованы для голосования");
+    return;
+  }
+  
+  const selectedOption = document.querySelector(`input[name="poll-${pollId}"]:checked`);
+  if (!selectedOption) {
+    alert("Выберите вариант голосования");
+    return;
+  }
+  
+  const optionIndex = parseInt(selectedOption.value);
+  const pollRef = db.ref(`polls/${pollId}`);
+  
+  pollRef.once('value').then(snapshot => {
+    const poll = snapshot.val();
+    if (!poll) return;
+    
+    // Проверка, голосовал ли пользователь ранее
+    if (poll.votedUsers && poll.votedUsers.includes(currentUser.uid)) {
+      alert("Вы уже проголосовали в этом голосовании");
+      return;
+    }
+    
+    // Обновление голосов
+    const updatedOptions = [...poll.options];
+    updatedOptions[optionIndex].votes++;
+    
+    // Добавление пользователя в проголосовавших
+    const votedUsers = poll.votedUsers ? [...poll.votedUsers, currentUser.uid] : [currentUser.uid];
+    
+    pollRef.update({
+      options: updatedOptions,
+      votedUsers: votedUsers
+    });
+    
+    alert("Ваш голос учтен!");
   });
 }
 
@@ -338,9 +422,10 @@ function loadAdmin() {
         const userElement = document.createElement('div');
         userElement.className = 'admin-user';
         userElement.innerHTML = `
-          <p>${user.name} (${user.email})</p>
-          <button onclick="resetUserPassword('${user.uid}')">Сбросить пароль</button>
-          <button onclick="logoutUserSessions('${user.uid}')">Разлогинить все сессии</button>
+          <p>${user.name} <span style="color: var(--on-surface-variant);">(${user.email})</span></p>
+          <div>
+            <button class="btn btn-secondary" onclick="resetUserPassword('${user.uid}')">Сбросить пароль</button>
+          </div>
         `;
         usersList.appendChild(userElement);
       });
@@ -348,7 +433,7 @@ function loadAdmin() {
   });
 }
 
-// Функция загрузки файла на noikcloud.xyz
+// Функция загрузки файла
 async function uploadFile(file) {
   if (file.size > 1024 * 1024 * 100) {
     alert("Файл больше 100 МБ!");
@@ -376,10 +461,16 @@ async function uploadFile(file) {
   }
 }
 
-// Примеры других функций (заглушки)
+// Примеры других функций
 function registerUser() {
   const email = document.getElementById('admin-email').value;
   const password = document.getElementById('admin-password').value;
+  
+  if (!email || !password) {
+    alert("Пожалуйста, заполните все поля");
+    return;
+  }
+  
   auth.createUserWithEmailAndPassword(email, password)
     .then(userCredential => {
       const user = userCredential.user;
@@ -402,8 +493,19 @@ function registerUser() {
 }
 
 function resetPassword() {
-  // Реализуйте логику сброса пароля через Firebase Auth
-  alert("Функция сброса пароля реализована в Firebase Auth");
+  const email = document.getElementById('admin-email').value;
+  if (!email) {
+    alert("Введите email пользователя");
+    return;
+  }
+  
+  auth.sendPasswordResetEmail(email)
+    .then(() => {
+      alert("Письмо для сброса пароля отправлено");
+    })
+    .catch(error => {
+      alert("Ошибка: " + error.message);
+    });
 }
 
 function buyItem(itemId) {
@@ -411,8 +513,121 @@ function buyItem(itemId) {
   alert(`Куплено: ${itemId}`);
 }
 
+function editProfile() {
+  alert("Редактирование профиля будет реализовано в следующей версии");
+}
+
+function changePassword() {
+  alert("Смена пароля будет реализована в следующей версии");
+}
+
+function addTask() {
+  alert("Добавление задачи будет реализовано в следующей версии");
+}
+
+function createPoll() {
+  alert("Создание голосования будет реализовано в следующей версии");
+}
+
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
+  // Обработчики для форм
+  document.getElementById('show-register').addEventListener('click', showRegisterForm);
+  document.getElementById('show-login').addEventListener('click', showLoginForm);
+  
+  document.getElementById('login-btn').addEventListener('click', () => {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        document.getElementById('login-error').textContent = '';
+        handleHash();
+      })
+      .catch(error => {
+        document.getElementById('login-error').textContent = error.message;
+      });
+  });
+  
+  document.getElementById('register-btn').addEventListener('click', () => {
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        const user = userCredential.user;
+        db.ref(`users/${user.uid}`).set({
+          name: "Новый пользователь",
+          email: email,
+          role: "user",
+          completedTasks: 0,
+          overdueTasks: 0,
+          pendingTasks: 0,
+          experienceLevel: 1,
+          streak: 0,
+          points: 0,
+          avatarUrl: "https://via.placeholder.com/150",
+          description: "Описание не указано",
+          professions: []
+        });
+        document.getElementById('register-error').textContent = '';
+        handleHash();
+      })
+      .catch(error => {
+        document.getElementById('register-error').textContent = error.message;
+      });
+  });
+  
+  // Обработчик для загрузки аватара
+  document.getElementById('avatar-upload').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    uploadFile(file).then(url => {
+      if (url) {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          db.ref(`users/${currentUser.uid}`).update({ avatarUrl: url });
+        }
+      }
+    });
+  });
+  
+  // Обработчик для файлов в чате
+  document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    uploadFile(file).then(url => {
+      if (url) {
+        const currentUser = auth.currentUser;
+        if (currentUser && currentChatUid) {
+          const messageRef = db.ref(`chats/${currentUser.uid}_${currentChatUid}`).push();
+          messageRef.set({
+            text: url,
+            senderId: currentUser.uid,
+            timestamp: Date.now(),
+            isFile: true
+          });
+        }
+      }
+    });
+  });
+  
+  // Обработка переключения вкладок админа
+  document.querySelectorAll('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      const tabId = tab.dataset.tab;
+      document.querySelectorAll('.admin-tab-content').forEach(content => {
+        content.style.display = 'none';
+      });
+      document.getElementById(`admin-${tabId}`).style.display = 'block';
+    });
+  });
+  
   // Загрузка профиля при старте
   if (auth.currentUser) {
     loadProfile();
