@@ -1,12 +1,12 @@
 // Firebase Configuration (Замените на свои данные из Firebase Console)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD515FOTmwOsB32a-uC1bHAvvq6A0KnvEg",
+  authDomain: "requit-tasks.firebaseapp.com",
+  databaseURL: "https://requit-tasks-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "requit-tasks",
+  storageBucket: "requit-tasks.firebasestorage.app",
+  messagingSenderId: "358068993646",
+  appId: "1:358068993646:web:f1e5d2bf7d15a13eecb07f"
 };
 
 firebase.initializeApp(firebaseConfig);
