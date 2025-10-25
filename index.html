@@ -252,15 +252,21 @@
           </div>
           <div id="admin-tasks" class="admin-tab-content" style="display: none;">
             <h3>Управление задачами</h3>
-            <p>Функционал в разработке</p>
+            <div class="admin-task-list" id="admin-tasks-list"></div>
           </div>
           <div id="admin-polls" class="admin-tab-content" style="display: none;">
             <h3>Управление голосованиями</h3>
-            <p>Функционал в разработке</p>
+            <div class="admin-poll-list" id="admin-polls-list"></div>
           </div>
           <div id="admin-shop" class="admin-tab-content" style="display: none;">
             <h3>Управление магазином</h3>
-            <p>Функционал в разработке</p>
+            <div class="admin-shop-form">
+              <input type="text" id="item-name" placeholder="Название товара">
+              <input type="number" id="item-price" placeholder="Цена (поинты)">
+              <input type="text" id="item-image" placeholder="URL изображения">
+              <button class="btn btn-primary" onclick="addShopItem()">Добавить товар</button>
+            </div>
+            <div class="admin-shop-list" id="admin-shop-items"></div>
           </div>
         </div>
       </section>

@@ -17,14 +17,18 @@ const db = firebase.database();
 const themeToggle = document.getElementById('theme-toggle');
 themeToggle.addEventListener('click', () => {
   document.body.classList.toggle('dark-theme');
-  localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+  const isDark = document.body.classList.contains('dark-theme');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 });
 
 // Загрузка сохраненной темы
 if (localStorage.getItem('theme') === 'dark') {
   document.body.classList.add('dark-theme');
+  themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
 } else {
   document.body.classList.remove('dark-theme');
+  themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
 }
 
 // Обработка хэша при загрузке и изменении
@@ -108,7 +112,7 @@ function loadProfile() {
   
   const userRef = db.ref(`users/${currentUser.uid}`);
   userRef.once('value').then(snapshot => {
-    const userData = snapshot.val();
+    const userData = snapshot.val() || {};
     if (!userData) return;
     
     document.getElementById('profile-avatar').src = userData.avatarUrl || 'https://via.placeholder.com/150';
@@ -403,8 +407,10 @@ function loadAdmin() {
   // Проверка роли админа
   const userRef = db.ref(`users/${currentUser.uid}`);
   userRef.once('value').then(snapshot => {
-    const userData = snapshot.val();
-    if (userData.role !== 'admin') {
+    const userData = snapshot.val() || {};
+    const role = userData.role || 'user';
+    
+    if (role !== 'admin') {
       document.getElementById('admin').innerHTML = '<h2>У вас нет доступа к админ панели</h2>';
       return;
     }
@@ -430,7 +436,124 @@ function loadAdmin() {
         usersList.appendChild(userElement);
       });
     });
+    
+    // Загрузка задач для админ-панели
+    loadAdminTasks();
+    
+    // Загрузка голосований для админ-панели
+    loadAdminPolls();
+    
+    // Загрузка товаров для магазина
+    loadAdminShopItems();
   });
+}
+
+function loadAdminTasks() {
+  const tasksRef = db.ref('tasks');
+  tasksRef.on('value', snapshot => {
+    const tasks = snapshot.val() || {};
+    const tasksList = document.getElementById('admin-tasks-list');
+    tasksList.innerHTML = '';
+    
+    Object.keys(tasks).forEach(userId => {
+      Object.values(tasks[userId]).forEach(task => {
+        const taskElement = document.createElement('div');
+        taskElement.className = 'admin-task-item';
+        taskElement.innerHTML = `
+          <p>Пользователь: ${userId}</p>
+          <p>Задача: ${task.title}</p>
+          <p>Статус: ${task.status}</p>
+          <button class="btn btn-secondary" onclick="deleteTask('${userId}', '${task.id}')">Удалить</button>
+        `;
+        tasksList.appendChild(taskElement);
+      });
+    });
+  });
+}
+
+function loadAdminPolls() {
+  const pollsRef = db.ref('polls');
+  pollsRef.on('value', snapshot => {
+    const polls = snapshot.val() || {};
+    const pollsList = document.getElementById('admin-polls-list');
+    pollsList.innerHTML = '';
+    
+    Object.values(polls).forEach(poll => {
+      const pollElement = document.createElement('div');
+      pollElement.className = 'admin-poll-item';
+      pollElement.innerHTML = `
+        <h3>${poll.title}</h3>
+        <p>${poll.description}</p>
+        <div class="poll-options">
+          ${poll.options.map(option => `
+            <div>${option.text}: ${option.votes} голосов</div>
+          `).join('')}
+        </div>
+        <button class="btn btn-secondary" onclick="deletePoll('${poll.id}')">Удалить</button>
+      `;
+      pollsList.appendChild(pollElement);
+    });
+  });
+}
+
+function loadAdminShopItems() {
+  const shopRef = db.ref('shop');
+  shopRef.on('value', snapshot => {
+    const items = snapshot.val() || {};
+    const shopItems = document.getElementById('admin-shop-items');
+    shopItems.innerHTML = '';
+    
+    Object.values(items).forEach(item => {
+      const itemElement = document.createElement('div');
+      itemElement.className = 'admin-shop-item';
+      itemElement.innerHTML = `
+        <img src="${item.image || 'https://via.placeholder.com/100'}" alt="${item.name}">
+        <h3>${item.name}</h3>
+        <p>Цена: ${item.price} поинтов</p>
+        <button class="btn btn-secondary" onclick="deleteShopItem('${item.id}')">Удалить</button>
+      `;
+      shopItems.appendChild(itemElement);
+    });
+  });
+}
+
+function deleteTask(userId, taskId) {
+  const taskRef = db.ref(`tasks/${userId}/${taskId}`);
+  taskRef.remove();
+  alert("Задача удалена");
+}
+
+function deletePoll(pollId) {
+  const pollRef = db.ref(`polls/${pollId}`);
+  pollRef.remove();
+  alert("Голосование удалено");
+}
+
+function deleteShopItem(itemId) {
+  const itemRef = db.ref(`shop/${itemId}`);
+  itemRef.remove();
+  alert("Товар удален");
+}
+
+function addShopItem() {
+  const name = document.getElementById('item-name').value;
+  const price = parseInt(document.getElementById('item-price').value);
+  const image = document.getElementById('item-image').value;
+  
+  if (!name || !price || !image) {
+    alert("Пожалуйста, заполните все поля");
+    return;
+  }
+  
+  const shopRef = db.ref('shop');
+  const newItemRef = shopRef.push();
+  newItemRef.set({
+    name,
+    price,
+    image
+  });
+  
+  alert("Товар добавлен");
 }
 
 // Функция загрузки файла
@@ -483,7 +606,10 @@ function registerUser() {
         pendingTasks: 0,
         experienceLevel: 1,
         streak: 0,
-        points: 0
+        points: 0,
+        avatarUrl: "https://via.placeholder.com/150",
+        description: "Описание не указано",
+        professions: []
       });
       alert("Сотрудник добавлен!");
     })
@@ -508,6 +634,24 @@ function resetPassword() {
     });
 }
 
+function resetUserPassword(uid) {
+  const userRef = db.ref(`users/${uid}`);
+  userRef.once('value').then(snapshot => {
+    const userData = snapshot.val();
+    if (userData && userData.email) {
+      auth.sendPasswordResetEmail(userData.email)
+        .then(() => {
+          alert("Письмо для сброса пароля отправлено на " + userData.email);
+        })
+        .catch(error => {
+          alert("Ошибка: " + error.message);
+        });
+    } else {
+      alert("Email пользователя не найден");
+    }
+  });
+}
+
 function buyItem(itemId) {
   // Логика покупки товара
   alert(`Куплено: ${itemId}`);
@@ -522,11 +666,68 @@ function changePassword() {
 }
 
 function addTask() {
-  alert("Добавление задачи будет реализовано в следующей версии");
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert("Вы должны быть авторизованы для добавления задачи");
+    return;
+  }
+
+  const title = prompt("Введите название задачи");
+  if (!title) return;
+  const description = prompt("Введите описание задачи");
+  const deadline = prompt("Введите срок выполнения (дд.мм.гггг)");
+  const date = new Date(deadline);
+  if (isNaN(date)) {
+    alert("Неверный формат даты");
+    return;
+  }
+
+  const taskData = {
+    title,
+    description,
+    deadline: date.getTime(),
+    status: 'pending'
+  };
+
+  const tasksRef = db.ref(`tasks/${currentUser.uid}`);
+  tasksRef.push().set(taskData);
+
+  alert("Задача добавлена!");
 }
 
 function createPoll() {
-  alert("Создание голосования будет реализовано в следующей версии");
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert("Вы должны быть авторизованы для создания голосования");
+    return;
+  }
+
+  const title = prompt("Введите заголовок голосования");
+  if (!title) return;
+  const description = prompt("Введите описание");
+  const options = [];
+  let option;
+  do {
+    option = prompt("Введите вариант (оставьте пустым для завершения)");
+    if (option) options.push({ text: option, votes: 0 });
+  } while (option);
+
+  if (options.length < 2) {
+    alert("Нужно минимум два варианта");
+    return;
+  }
+
+  const pollData = {
+    title,
+    description,
+    options,
+    votedUsers: []
+  };
+
+  const pollsRef = db.ref('polls');
+  pollsRef.push().set(pollData);
+
+  alert("Голосование создано!");
 }
 
 // Инициализация
