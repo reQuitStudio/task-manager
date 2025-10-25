@@ -24,7 +24,6 @@
           <li><a href="#tasks"><i class="fas fa-tasks"></i> Задачи</a></li>
           <li><a href="#messenger"><i class="fas fa-comment-dots"></i> Мессенджер</a></li>
           <li><a href="#top"><i class="fas fa-trophy"></i> Топ</a></li>
-          <li><a href="#top-week"><i class="fas fa-calendar-week"></i> Топ недели</a></li>
           <li><a href="#polls"><i class="fas fa-poll"></i> Голосования</a></li>
           <li><a href="#shop"><i class="fas fa-shopping-cart"></i> Магазин</a></li>
           <li><a href="#admin"><i class="fas fa-cog"></i> Админ панель</a></li>
@@ -73,7 +72,7 @@
       <section id="profile" class="section">
         <div class="profile-card">
           <div class="avatar-container">
-            <img id="profile-avatar" src="https://via.placeholder.com/150" alt="Аватар" class="avatar">
+            <img id="profile-avatar" alt="Аватар" class="avatar">
             <button class="edit-avatar" onclick="document.getElementById('avatar-upload').click()">
               <i class="fas fa-camera"></i>
             </button>
@@ -138,7 +137,7 @@
               <option value="oldest">Старые</option>
               <option value="deadline">Срок выполнения</option>
             </select>
-            <button class="btn btn-primary" onclick="addTask()"><i class="fas fa-plus"></i> Новая задача</button>
+            <button class="btn btn-primary" id="add-task-btn" style="display: none;" onclick="showCreateTaskModal()"><i class="fas fa-plus"></i> Новая задача</button>
           </div>
         </div>
         <div id="tasks-list" class="task-list"></div>
@@ -154,10 +153,10 @@
             </div>
             <div id="contacts-list"></div>
           </div>
-          <div class="chat-window">
+          <div class="chat-window" style="display: none;">
             <div class="chat-header">
               <div class="chat-user">
-                <img src="https://via.placeholder.com/40" alt="Аватар" class="chat-avatar">
+                <img src="" alt="Аватар" class="chat-avatar">
                 <h3 id="chat-title">Чат с пользователем</h3>
               </div>
               <div class="chat-actions">
@@ -189,34 +188,18 @@
           </div>
         </div>
         <div class="top-content">
-          <div class="top-table" id="top-completed">
-            <!-- Таблица по выполненным задачам -->
-          </div>
-          <div class="top-table" id="top-streak" style="display: none;">
-            <!-- Таблица по стрику -->
-          </div>
-          <div class="top-table" id="top-experience" style="display: none;">
-            <!-- Таблица по уровню опыта -->
-          </div>
-          <div class="top-table" id="top-points" style="display: none;">
-            <!-- Таблица по поинтам -->
-          </div>
+          <div class="top-table" id="top-completed"></div>
+          <div class="top-table" id="top-streak" style="display: none;"></div>
+          <div class="top-table" id="top-experience" style="display: none;"></div>
+          <div class="top-table" id="top-points" style="display: none;"></div>
         </div>
-      </section>
-
-      <!-- Топ недели -->
-      <section id="top-week" class="section">
-        <div class="top-header">
-          <h2><i class="fas fa-calendar-week"></i> Топ за неделю</h2>
-        </div>
-        <div class="top-table" id="top-week-table"></div>
       </section>
 
       <!-- Голосования -->
       <section id="polls" class="section">
         <div class="polls-header">
           <h2><i class="fas fa-poll"></i> Голосования</h2>
-          <button class="btn btn-primary" onclick="createPoll()"><i class="fas fa-plus"></i> Новое голосование</button>
+          <button class="btn btn-primary" id="create-poll-btn" style="display: none;" onclick="createPoll()"><i class="fas fa-plus"></i> Новое голосование</button>
         </div>
         <div id="polls-list"></div>
       </section>
@@ -252,6 +235,15 @@
           </div>
           <div id="admin-tasks" class="admin-tab-content" style="display: none;">
             <h3>Управление задачами</h3>
+            <div class="admin-task-form">
+              <input type="text" id="task-title" placeholder="Название задачи">
+              <input type="text" id="task-description" placeholder="Описание">
+              <input type="datetime-local" id="task-deadline">
+              <select id="task-user">
+                <option value="">Выберите пользователя</option>
+              </select>
+              <button class="btn btn-primary" onclick="createTask()">Создать задачу</button>
+            </div>
             <div class="admin-task-list" id="admin-tasks-list"></div>
           </div>
           <div id="admin-polls" class="admin-tab-content" style="display: none;">
@@ -263,7 +255,7 @@
             <div class="admin-shop-form">
               <input type="text" id="item-name" placeholder="Название товара">
               <input type="number" id="item-price" placeholder="Цена (поинты)">
-              <input type="text" id="item-image" placeholder="URL изображения">
+              <input type="file" id="item-image-file" accept="image/*">
               <button class="btn btn-primary" onclick="addShopItem()">Добавить товар</button>
             </div>
             <div class="admin-shop-list" id="admin-shop-items"></div>

@@ -50,7 +50,6 @@ function handleHash() {
   if (hash === 'tasks') loadTasks();
   if (hash === 'messenger') loadMessenger();
   if (hash === 'top') loadTop();
-  if (hash === 'top-week') loadTopWeek();
   if (hash === 'polls') loadPolls();
   if (hash === 'shop') loadShop();
   if (hash === 'admin') loadAdmin();
@@ -113,9 +112,8 @@ function loadProfile() {
   const userRef = db.ref(`users/${currentUser.uid}`);
   userRef.once('value').then(snapshot => {
     const userData = snapshot.val() || {};
-    if (!userData) return;
     
-    document.getElementById('profile-avatar').src = userData.avatarUrl || 'https://via.placeholder.com/150';
+    document.getElementById('profile-avatar').src = userData.avatarUrl || '';
     document.getElementById('profile-name').textContent = userData.name || 'Имя не указано';
     document.getElementById('profile-id').textContent = currentUser.uid;
     document.getElementById('completed-tasks').textContent = userData.completedTasks || 0;
@@ -159,26 +157,45 @@ function loadMessenger() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
   
-  // Загрузка контактов
-  const contactsRef = db.ref('users');
-  contactsRef.once('value').then(snapshot => {
-    const contacts = snapshot.val() || {};
-    const contactsList = document.getElementById('contacts-list');
-    contactsList.innerHTML = '';
+  const contactsList = document.getElementById('contacts-list');
+  contactsList.innerHTML = '';
+  
+  // Получаем все чаты, где участвует текущий пользователь
+  const chatsRef = db.ref('chats');
+  chatsRef.once('value').then(snapshot => {
+    const chats = snapshot.val() || {};
+    const contactUids = new Set();
     
-    Object.values(contacts).forEach(user => {
-      if (user.uid === currentUser.uid) return;
-      
-      const contactElement = document.createElement('div');
-      contactElement.className = 'contact';
-      contactElement.innerHTML = `
-        <img src="${user.avatarUrl || 'https://via.placeholder.com/40'}" alt="${user.name}">
-        <span>${user.name}</span>
-      `;
-      contactElement.dataset.uid = user.uid;
-      contactElement.onclick = () => openChat(user.uid, user.name);
-      contactsList.appendChild(contactElement);
+    Object.keys(chats).forEach(chatId => {
+      if (chatId.includes(currentUser.uid)) {
+        const uids = chatId.split('_');
+        const otherUid = uids[0] === currentUser.uid ? uids[1] : uids[0];
+        contactUids.add(otherUid);
+      }
     });
+    
+    // Для каждого контакта получаем данные
+    contactUids.forEach(uid => {
+      const userRef = db.ref(`users/${uid}`);
+      userRef.once('value').then(userSnapshot => {
+        const userData = userSnapshot.val() || {};
+        const userName = userData.name || 'Пользователь';
+        
+        const contactElement = document.createElement('div');
+        contactElement.className = 'contact';
+        contactElement.innerHTML = `
+          <img src="${userData.avatarUrl || ''}" alt="${userName}">
+          <span>${userName}</span>
+        `;
+        contactElement.dataset.uid = uid;
+        contactElement.onclick = () => openChat(uid, userName);
+        contactsList.appendChild(contactElement);
+      }).catch(error => {
+        console.error("Error loading user data:", error);
+      });
+    });
+  }).catch(error => {
+    console.error("Error loading chats:", error);
   });
 }
 
@@ -210,6 +227,9 @@ function openChat(uid, name) {
     
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
+  
+  // Показываем чат
+  document.querySelector('.chat-window').style.display = 'flex';
 }
 
 function sendMessage() {
@@ -219,7 +239,8 @@ function sendMessage() {
   
   if (!messageText || !currentChatUid) return;
   
-  const messageRef = db.ref(`chats/${currentUser.uid}_${currentChatUid}`).push();
+  const chatId = [currentUser.uid, currentChatUid].sort().join('_');
+  const messageRef = db.ref(`chats/${chatId}`).push();
   messageRef.set({
     text: messageText,
     senderId: currentUser.uid,
@@ -247,12 +268,32 @@ function loadTop() {
       loadTopData(tabId);
     });
   });
+  
+  // Загружаем первый таб по умолчанию
+  loadTopData('completed');
 }
 
 function loadTopData(tabId) {
-  const topRef = db.ref('top');
-  topRef.once('value').then(snapshot => {
-    const topData = snapshot.val() || {};
+  const usersRef = db.ref('users');
+  usersRef.once('value').then(snapshot => {
+    const users = snapshot.val() || {};
+    let sortedUsers = Object.values(users).filter(user => user.role !== 'admin' && user.name);
+    
+    switch (tabId) {
+      case 'completed':
+        sortedUsers.sort((a, b) => (b.completedTasks || 0) - (a.completedTasks || 0));
+        break;
+      case 'streak':
+        sortedUsers.sort((a, b) => (b.streak || 0) - (a.streak || 0));
+        break;
+      case 'experience':
+        sortedUsers.sort((a, b) => (b.experienceLevel || 0) - (a.experienceLevel || 0));
+        break;
+      case 'points':
+        sortedUsers.sort((a, b) => (b.points || 0) - (a.points || 0));
+        break;
+    }
+    
     const table = document.getElementById(`top-${tabId}`);
     table.innerHTML = `
       <table>
@@ -264,45 +305,18 @@ function loadTopData(tabId) {
           </tr>
         </thead>
         <tbody>
-          ${Object.values(topData[tabId] || {}).map((user, index) => `
+          ${sortedUsers.slice(0, 10).map((user, index) => `
             <tr>
               <td>${index + 1}</td>
               <td>${user.name}</td>
-              <td>${user.value}</td>
+              <td>${user[tabId === 'completed' ? 'completedTasks' : tabId === 'streak' ? 'streak' : tabId === 'experience' ? 'experienceLevel' : 'points'] || 0}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
     `;
-  });
-}
-
-// Загрузка топа недели
-function loadTopWeek() {
-  const topWeekRef = db.ref('top-week');
-  topWeekRef.once('value').then(snapshot => {
-    const topData = snapshot.val() || {};
-    const table = document.getElementById('top-week-table');
-    table.innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Место</th>
-            <th>Пользователь</th>
-            <th>Очки</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Object.values(topData).map((user, index) => `
-            <tr>
-              <td>${index + 1}</td>
-              <td>${user.name}</td>
-              <td>${user.points}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+  }).catch(error => {
+    console.error("Error loading top data:", error);
   });
 }
 
@@ -351,29 +365,39 @@ function vote(pollId) {
   const optionIndex = parseInt(selectedOption.value);
   const pollRef = db.ref(`polls/${pollId}`);
   
-  pollRef.once('value').then(snapshot => {
-    const poll = snapshot.val();
-    if (!poll) return;
+  pollRef.transaction(poll => {
+    if (!poll) return; // poll doesn't exist
+    
+    // Инициализация votedUsers, если не существует
+    if (!poll.votedUsers) {
+      poll.votedUsers = [];
+    }
     
     // Проверка, голосовал ли пользователь ранее
-    if (poll.votedUsers && poll.votedUsers.includes(currentUser.uid)) {
+    if (poll.votedUsers.includes(currentUser.uid)) {
       alert("Вы уже проголосовали в этом голосовании");
-      return;
+      return; // не обновляем
     }
     
     // Обновление голосов
-    const updatedOptions = [...poll.options];
-    updatedOptions[optionIndex].votes++;
+    if (!poll.options || !poll.options[optionIndex]) {
+      return; // invalid option
+    }
+    poll.options[optionIndex].votes = (poll.options[optionIndex].votes || 0) + 1;
     
     // Добавление пользователя в проголосовавших
-    const votedUsers = poll.votedUsers ? [...poll.votedUsers, currentUser.uid] : [currentUser.uid];
+    poll.votedUsers.push(currentUser.uid);
     
-    pollRef.update({
-      options: updatedOptions,
-      votedUsers: votedUsers
-    });
-    
-    alert("Ваш голос учтен!");
+    return poll;
+  }, (error, committed) => {
+    if (error) {
+      console.error("Transaction failed:", error);
+      alert("Ошибка при голосовании");
+    } else if (!committed) {
+      // уже проголосовали
+    } else {
+      alert("Ваш голос учтен!");
+    }
   });
 }
 
@@ -389,13 +413,43 @@ function loadShop() {
       const itemElement = document.createElement('div');
       itemElement.className = 'shop-item';
       itemElement.innerHTML = `
-        <img src="${item.image || 'https://via.placeholder.com/100'}" alt="${item.name}">
+        <img src="${item.image || ''}" alt="${item.name}">
         <h3>${item.name}</h3>
         <p class="price">${item.price} поинтов</p>
-        <button class="buy-btn" onclick="buyItem('${item.id}')">Купить</button>
+        <button class="buy-btn" onclick="buyItem('${item.id}', ${item.price})">Купить</button>
       `;
       shopItems.appendChild(itemElement);
     });
+  });
+}
+
+function buyItem(itemId, price) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert("Вы должны быть авторизованы");
+    return;
+  }
+
+  const userRef = db.ref(`users/${currentUser.uid}`);
+  userRef.once('value').then(snapshot => {
+    const userData = snapshot.val() || {};
+    
+    if (userData.points < price) {
+      alert("Недостаточно поинтов");
+      return;
+    }
+    
+    // Списываем поинты
+    const newPoints = userData.points - price;
+    userRef.update({ points: newPoints });
+    
+    // Добавляем в инвентарь
+    const inventoryRef = db.ref(`inventory/${currentUser.uid}/${itemId}`);
+    inventoryRef.set({
+      purchasedAt: Date.now()
+    });
+    
+    alert("Покупка успешно совершена!");
   });
 }
 
@@ -414,6 +468,10 @@ function loadAdmin() {
       document.getElementById('admin').innerHTML = '<h2>У вас нет доступа к админ панели</h2>';
       return;
     }
+    
+    // Показываем кнопки управления
+    document.getElementById('create-poll-btn').style.display = 'inline-block';
+    document.getElementById('add-task-btn').style.display = 'inline-block';
     
     // Загрузка сотрудников
     const usersRef = db.ref('users');
@@ -437,6 +495,22 @@ function loadAdmin() {
       });
     });
     
+    // Загрузка пользователей в селект для задач
+    const taskUserSelect = document.getElementById('task-user');
+    taskUserSelect.innerHTML = '<option value="">Выберите пользователя</option>';
+    
+    usersRef.once('value').then(snapshot => {
+      const users = snapshot.val() || {};
+      Object.values(users).forEach(user => {
+        if (user.role === 'admin') return;
+        
+        const option = document.createElement('option');
+        option.value = user.uid;
+        option.textContent = `${user.name} (ID: ${user.uid})`;
+        taskUserSelect.appendChild(option);
+      });
+    });
+    
     // Загрузка задач для админ-панели
     loadAdminTasks();
     
@@ -450,22 +524,33 @@ function loadAdmin() {
 
 function loadAdminTasks() {
   const tasksRef = db.ref('tasks');
-  tasksRef.on('value', snapshot => {
+  tasksRef.once('value').then(snapshot => {
     const tasks = snapshot.val() || {};
     const tasksList = document.getElementById('admin-tasks-list');
     tasksList.innerHTML = '';
     
     Object.keys(tasks).forEach(userId => {
-      Object.values(tasks[userId]).forEach(task => {
-        const taskElement = document.createElement('div');
-        taskElement.className = 'admin-task-item';
-        taskElement.innerHTML = `
-          <p>Пользователь: ${userId}</p>
-          <p>Задача: ${task.title}</p>
-          <p>Статус: ${task.status}</p>
-          <button class="btn btn-secondary" onclick="deleteTask('${userId}', '${task.id}')">Удалить</button>
-        `;
-        tasksList.appendChild(taskElement);
+      const userRef = db.ref(`users/${userId}`);
+      userRef.once('value').then(userSnapshot => {
+        const userData = userSnapshot.val() || {};
+        const userName = userData.name || userId;
+        
+        Object.values(tasks[userId]).forEach(task => {
+          const taskElement = document.createElement('div');
+          taskElement.className = 'admin-task-item';
+          taskElement.innerHTML = `
+            <p>Пользователь: ${userName} (ID: ${userId})</p>
+            <p>Задача: ${task.title}</p>
+            <p>Статус: ${task.status}</p>
+            <div class="task-actions">
+              <button class="btn btn-success" onclick="updateTaskStatus('${userId}', '${task.id}', 'completed')">Выполнено</button>
+              <button class="btn btn-warning" onclick="updateTaskStatus('${userId}', '${task.id}', 'overdue')">Просрочено</button>
+              <button class="btn btn-info" onclick="updateTaskStatus('${userId}', '${task.id}', 'pending')">В ожидании</button>
+              <button class="btn btn-danger" onclick="deleteTask('${userId}', '${task.id}')">Удалить</button>
+            </div>
+          `;
+          tasksList.appendChild(taskElement);
+        });
       });
     });
   });
@@ -489,7 +574,7 @@ function loadAdminPolls() {
             <div>${option.text}: ${option.votes} голосов</div>
           `).join('')}
         </div>
-        <button class="btn btn-secondary" onclick="deletePoll('${poll.id}')">Удалить</button>
+        <button class="btn btn-danger" onclick="deletePoll('${poll.id}')">Удалить</button>
       `;
       pollsList.appendChild(pollElement);
     });
@@ -507,10 +592,10 @@ function loadAdminShopItems() {
       const itemElement = document.createElement('div');
       itemElement.className = 'admin-shop-item';
       itemElement.innerHTML = `
-        <img src="${item.image || 'https://via.placeholder.com/100'}" alt="${item.name}">
+        <img src="${item.image || ''}" alt="${item.name}">
         <h3>${item.name}</h3>
         <p>Цена: ${item.price} поинтов</p>
-        <button class="btn btn-secondary" onclick="deleteShopItem('${item.id}')">Удалить</button>
+        <button class="btn btn-danger" onclick="deleteShopItem('${item.id}')">Удалить</button>
       `;
       shopItems.appendChild(itemElement);
     });
@@ -521,6 +606,12 @@ function deleteTask(userId, taskId) {
   const taskRef = db.ref(`tasks/${userId}/${taskId}`);
   taskRef.remove();
   alert("Задача удалена");
+}
+
+function updateTaskStatus(userId, taskId, status) {
+  const taskRef = db.ref(`tasks/${userId}/${taskId}`);
+  taskRef.update({ status });
+  alert(`Статус задачи изменен на "${status}"`);
 }
 
 function deletePoll(pollId) {
@@ -538,22 +629,29 @@ function deleteShopItem(itemId) {
 function addShopItem() {
   const name = document.getElementById('item-name').value;
   const price = parseInt(document.getElementById('item-price').value);
-  const image = document.getElementById('item-image').value;
+  const fileInput = document.getElementById('item-image-file');
+  const file = fileInput.files[0];
   
-  if (!name || !price || !image) {
-    alert("Пожалуйста, заполните все поля");
+  if (!name || !price || !file) {
+    alert("Пожалуйста, заполните все поля и выберите изображение");
     return;
   }
   
-  const shopRef = db.ref('shop');
-  const newItemRef = shopRef.push();
-  newItemRef.set({
-    name,
-    price,
-    image
+  uploadFile(file).then(url => {
+    if (url) {
+      const shopRef = db.ref('shop');
+      const newItemRef = shopRef.push();
+      newItemRef.set({
+        name,
+        price,
+        image: url
+      });
+      alert("Товар добавлен");
+      document.getElementById('item-name').value = '';
+      document.getElementById('item-price').value = '';
+      fileInput.value = '';
+    }
   });
-  
-  alert("Товар добавлен");
 }
 
 // Функция загрузки файла
@@ -607,7 +705,7 @@ function registerUser() {
         experienceLevel: 1,
         streak: 0,
         points: 0,
-        avatarUrl: "https://via.placeholder.com/150",
+        avatarUrl: "",
         description: "Описание не указано",
         professions: []
       });
@@ -652,11 +750,6 @@ function resetUserPassword(uid) {
   });
 }
 
-function buyItem(itemId) {
-  // Логика покупки товара
-  alert(`Куплено: ${itemId}`);
-}
-
 function editProfile() {
   alert("Редактирование профиля будет реализовано в следующей версии");
 }
@@ -665,17 +758,23 @@ function changePassword() {
   alert("Смена пароля будет реализована в следующей версии");
 }
 
-function addTask() {
+function createTask() {
   const currentUser = auth.currentUser;
   if (!currentUser) {
-    alert("Вы должны быть авторизованы для добавления задачи");
+    alert("Вы должны быть авторизованы");
     return;
   }
 
-  const title = prompt("Введите название задачи");
-  if (!title) return;
-  const description = prompt("Введите описание задачи");
-  const deadline = prompt("Введите срок выполнения (дд.мм.гггг)");
+  const title = document.getElementById('task-title').value;
+  const description = document.getElementById('task-description').value;
+  const deadline = document.getElementById('task-deadline').value;
+  const userId = document.getElementById('task-user').value;
+  
+  if (!title || !userId || !deadline) {
+    alert("Заполните все обязательные поля");
+    return;
+  }
+
   const date = new Date(deadline);
   if (isNaN(date)) {
     alert("Неверный формат даты");
@@ -689,10 +788,15 @@ function addTask() {
     status: 'pending'
   };
 
-  const tasksRef = db.ref(`tasks/${currentUser.uid}`);
+  const tasksRef = db.ref(`tasks/${userId}`);
   tasksRef.push().set(taskData);
 
   alert("Задача добавлена!");
+  
+  // Сброс формы
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-description').value = '';
+  document.getElementById('task-deadline').value = '';
 }
 
 function createPoll() {
@@ -767,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
           experienceLevel: 1,
           streak: 0,
           points: 0,
-          avatarUrl: "https://via.placeholder.com/150",
+          avatarUrl: "",
           description: "Описание не указано",
           professions: []
         });
@@ -803,7 +907,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (url) {
         const currentUser = auth.currentUser;
         if (currentUser && currentChatUid) {
-          const messageRef = db.ref(`chats/${currentUser.uid}_${currentChatUid}`).push();
+          const chatId = [currentUser.uid, currentChatUid].sort().join('_');
+          const messageRef = db.ref(`chats/${chatId}`).push();
           messageRef.set({
             text: url,
             senderId: currentUser.uid,
@@ -833,4 +938,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (auth.currentUser) {
     loadProfile();
   }
+  
+  // Обработка хэша
+  window.addEventListener('hashchange', handleHash);
+  handleHash();
 });
