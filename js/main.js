@@ -277,19 +277,20 @@ function loadTopData(tabId) {
   const usersRef = db.ref('users');
   usersRef.once('value').then(snapshot => {
     const users = snapshot.val() || {};
+    let sortedUsers = Object.values(users);
     
     switch (tabId) {
       case 'completed':
-        users.sort((a, b) => (b.completedTasks || 0) - (a.completedTasks || 0));
+        sortedUsers.sort((a, b) => (b.completedTasks || 0) - (a.completedTasks || 0));
         break;
       case 'streak':
-        users.sort((a, b) => (b.streak || 0) - (a.streak || 0));
+        sortedUsers.sort((a, b) => (b.streak || 0) - (a.streak || 0));
         break;
       case 'experience':
-        users.sort((a, b) => (b.experienceLevel || 0) - (a.experienceLevel || 0));
+        sortedUsers.sort((a, b) => (b.experienceLevel || 0) - (a.experienceLevel || 0));
         break;
       case 'points':
-        users.sort((a, b) => (b.points || 0) - (a.points || 0));
+        sortedUsers.sort((a, b) => (b.points || 0) - (a.points || 0));
         break;
     }
     
