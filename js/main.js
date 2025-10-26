@@ -555,12 +555,10 @@ function loadAdmin() {
     
     usersRef.once('value').then(snapshot => {
       const users = snapshot.val() || {};
-      Object.values(users).forEach(user => {
-        if (user.role === 'admin') return;
-        
+      Object.entries(users).forEach(([key, user]) => {
         const option = document.createElement('option');
-        option.value = user.uid;
-        option.textContent = `${user.name} (ID: ${user.uid})`;
+        option.value = key;
+        option.textContent = `${user.name} (ID: ${key})`;
         taskUserSelect.appendChild(option);
       });
     });

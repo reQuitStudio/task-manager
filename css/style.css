@@ -680,7 +680,6 @@ select:focus {
   height: 40px;
   border-radius: var(--radius-full);
   margin-right: 12px;
-  border: 2px solid var(--primary);
 }
 
 .contact span {
@@ -716,7 +715,6 @@ select:focus {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-full);
-  border: 2px solid var(--primary);
 }
 
 .chat-actions {
