@@ -525,7 +525,6 @@ function loadAdmin() {
     
     // Показываем кнопки управления
     document.getElementById('create-poll-btn').style.display = 'inline-block';
-    document.getElementById('add-task-btn').style.display = 'inline-block';
     
     // Загрузка сотрудников
     const usersRef = db.ref('users');
