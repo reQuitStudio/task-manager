@@ -33,26 +33,40 @@ if (localStorage.getItem('theme') === 'dark') {
 
 // Обработка хэша при загрузке и изменении
 function handleHash() {
+  const user = auth.currentUser;
   const hash = window.location.hash.substring(1);
+  
+  // Если пользователь не авторизован, но пытается открыть защищенную секцию
+  if (!user && hash && hash !== 'login' && hash !== 'register') {
+    window.location.hash = 'login';
+    return;
+  }
+  
+  // Очищаем все секции
   document.querySelectorAll('.section').forEach(section => {
     section.classList.remove('active');
   });
   
-  if (hash) {
-    const section = document.getElementById(hash);
-    if (section) section.classList.add('active');
+  // Если хэш пустой или пользователь авторизован и пытается открыть защищенную секцию
+  if (!hash || (user && hash !== 'login' && hash !== 'register')) {
+    const sectionId = hash || 'profile';
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.classList.add('active');
+      
+      // Загрузка данных для текущей секции
+      if (sectionId === 'profile') loadProfile();
+      if (sectionId === 'tasks') loadTasks();
+      if (sectionId === 'messenger') loadMessenger();
+      if (sectionId === 'top') loadTop();
+      if (sectionId === 'polls') loadPolls();
+      if (sectionId === 'shop') loadShop();
+      if (sectionId === 'admin') loadAdmin();
+    }
   } else {
-    document.getElementById('profile').classList.add('active');
+    // Показываем форму входа/регистрации
+    document.getElementById(hash).classList.add('active');
   }
-  
-  // Загрузка данных для текущей секции
-  if (hash === 'profile' || !hash) loadProfile();
-  if (hash === 'tasks') loadTasks();
-  if (hash === 'messenger') loadMessenger();
-  if (hash === 'top') loadTop();
-  if (hash === 'polls') loadPolls();
-  if (hash === 'shop') loadShop();
-  if (hash === 'admin') loadAdmin();
 }
 
 // Показать форму входа
@@ -71,21 +85,61 @@ function showRegisterForm() {
 
 // Аутентификация
 auth.onAuthStateChanged(user => {
+  const currentHash = window.location.hash.substring(1) || 'login';
+  
   if (!user) {
-    // Перенаправление на страницу входа
+    // Показать форму входа
     document.getElementById('login').classList.add('active');
     document.getElementById('logout-btn').style.display = 'none';
-    document.querySelectorAll('.section').forEach(section => {
-      if (section.id !== 'login' && section.id !== 'register') {
-        section.classList.remove('active');
-      }
-    });
-    window.location.hash = 'login';
+    
+    // Если пользователь пытается перейти в защищенную зону, перенаправить на login
+    if (currentHash !== 'login' && currentHash !== 'register') {
+      window.location.hash = 'login';
+    }
   } else {
     document.getElementById('logout-btn').style.display = 'inline-flex';
     handleHash();
   }
 });
+
+// Улучшите функцию handleHash для дополнительной проверки
+function handleHash() {
+  const user = auth.currentUser;
+  const hash = window.location.hash.substring(1);
+  
+  // Если пользователь не авторизован, но пытается открыть защищенную секцию
+  if (!user && hash && hash !== 'login' && hash !== 'register') {
+    window.location.hash = 'login';
+    return;
+  }
+  
+  // Очищаем все секции
+  document.querySelectorAll('.section').forEach(section => {
+    section.classList.remove('active');
+  });
+  
+  // Если хэш пустой или пользователь авторизован и пытается открыть защищенную секцию
+  if (!hash || (user && hash !== 'login' && hash !== 'register')) {
+    const sectionId = hash || 'profile';
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.classList.add('active');
+      
+      // Загрузка данных для текущей секции
+      if (sectionId === 'profile') loadProfile();
+      if (sectionId === 'tasks') loadTasks();
+      if (sectionId === 'messenger') loadMessenger();
+      if (sectionId === 'top') loadTop();
+      if (sectionId === 'polls') loadPolls();
+      if (sectionId === 'shop') loadShop();
+      if (sectionId === 'admin') loadAdmin();
+      if (sectionId === 'global-chat') loadGlobalChat(); // Для нового глобального чата
+    }
+  } else {
+    // Показываем форму входа/регистрации
+    document.getElementById(hash).classList.add('active');
+  }
+}
 
 // Выход из системы
 document.getElementById('logout-btn').addEventListener('click', () => {
@@ -158,44 +212,40 @@ function loadMessenger() {
   if (!currentUser) return;
   
   const contactsList = document.getElementById('contacts-list');
-  contactsList.innerHTML = '';
+  contactsList.innerHTML = '<div class="loading">Загрузка контактов...</div>';
   
-  // Получаем все чаты, где участвует текущий пользователь
-  const chatsRef = db.ref('chats');
-  chatsRef.once('value').then(snapshot => {
-    const chats = snapshot.val() || {};
-    const contactUids = new Set();
+  // Получаем всех пользователей из базы данных
+  const usersRef = db.ref('users');
+  usersRef.once('value').then(snapshot => {
+    const users = snapshot.val() || {};
+    contactsList.innerHTML = '';
     
-    Object.keys(chats).forEach(chatId => {
-      if (chatId.includes(currentUser.uid)) {
-        const uids = chatId.split('_');
-        const otherUid = uids[0] === currentUser.uid ? uids[1] : uids[0];
-        contactUids.add(otherUid);
-      }
+    Object.keys(users).forEach(uid => {
+      // Пропускаем текущего пользователя
+      if (uid === currentUser.uid) return;
+      
+      const userData = users[uid];
+      const userName = userData.name || 'Пользователь';
+      
+      const contactElement = document.createElement('div');
+      contactElement.className = 'contact';
+      contactElement.innerHTML = `
+        <img src="${userData.avatarUrl || 'default-avatar.png'}" alt="${userName}">
+        <span>${userName}</span>
+        ${userData.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
+      `;
+      contactElement.dataset.uid = uid;
+      contactElement.onclick = () => openChat(uid, userName);
+      contactsList.appendChild(contactElement);
     });
     
-    // Для каждого контакта получаем данные
-    contactUids.forEach(uid => {
-      const userRef = db.ref(`users/${uid}`);
-      userRef.once('value').then(userSnapshot => {
-        const userData = userSnapshot.val() || {};
-        const userName = userData.name || 'Пользователь';
-        
-        const contactElement = document.createElement('div');
-        contactElement.className = 'contact';
-        contactElement.innerHTML = `
-          <img src="${userData.avatarUrl || ''}" alt="${userName}">
-          <span>${userName}</span>
-        `;
-        contactElement.dataset.uid = uid;
-        contactElement.onclick = () => openChat(uid, userName);
-        contactsList.appendChild(contactElement);
-      }).catch(error => {
-        console.error("Error loading user data:", error);
-      });
-    });
+    // Если контактов нет
+    if (contactsList.children.length === 0) {
+      contactsList.innerHTML = '<div class="no-contacts">Нет доступных контактов</div>';
+    }
   }).catch(error => {
-    console.error("Error loading chats:", error);
+    console.error("Error loading users:", error);
+    contactsList.innerHTML = '<div class="error">Ошибка загрузки контактов</div>';
   });
 }
 
