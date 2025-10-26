@@ -12,6 +12,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+let allContacts = [];
 
 // Переключение темы
 const themeToggle = document.getElementById('theme-toggle');
@@ -185,14 +186,27 @@ function loadProfile() {
 function loadTasks() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
-  
   const tasksRef = db.ref(`tasks/${currentUser.uid}`);
   tasksRef.on('value', snapshot => {
     const tasks = snapshot.val() || {};
     const tasksList = document.getElementById('tasks-list');
     tasksList.innerHTML = '';
     
-    Object.values(tasks).forEach(task => {
+    // Получаем текущий тип сортировки
+    const sortType = document.getElementById('task-sort').value;
+    let tasksArray = Object.values(tasks);
+    
+    // Сортируем задачи
+    if (sortType === 'newest') {
+      tasksArray.sort((a, b) => b.timestamp - a.timestamp);
+    } else if (sortType === 'oldest') {
+      tasksArray.sort((a, b) => a.timestamp - b.timestamp);
+    } else if (sortType === 'deadline') {
+      tasksArray.sort((a, b) => a.deadline - b.deadline);
+    }
+    
+    // Выводим отсортированные задачи
+    tasksArray.forEach(task => {
       const taskElement = document.createElement('div');
       taskElement.className = 'task-item';
       taskElement.innerHTML = `
@@ -210,7 +224,6 @@ function loadTasks() {
 function loadMessenger() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
-  
   const contactsList = document.getElementById('contacts-list');
   contactsList.innerHTML = '<div class="loading">Загрузка контактов...</div>';
   
@@ -218,35 +231,43 @@ function loadMessenger() {
   const usersRef = db.ref('users');
   usersRef.once('value').then(snapshot => {
     const users = snapshot.val() || {};
-    contactsList.innerHTML = '';
-    
-    Object.keys(users).forEach(uid => {
-      // Пропускаем текущего пользователя
-      if (uid === currentUser.uid) return;
-      
-      const userData = users[uid];
-      const userName = userData.name || 'Пользователь';
-      
-      const contactElement = document.createElement('div');
-      contactElement.className = 'contact';
-      contactElement.innerHTML = `
-        <img src="${userData.avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
-        <span>${userName}</span>
-        ${userData.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
-      `;
-      contactElement.dataset.uid = uid;
-      contactElement.onclick = () => openChat(uid, userData);
-      contactsList.appendChild(contactElement);
-    });
-    
-    // Если контактов нет
-    if (contactsList.children.length === 0) {
-      contactsList.innerHTML = '<div class="no-contacts">Нет доступных контактов</div>';
-    }
+    allContacts = Object.values(users);
+    filterContacts(); // Отображаем контакты с фильтрацией
   }).catch(error => {
     console.error("Error loading users:", error);
     contactsList.innerHTML = '<div class="error">Ошибка загрузки контактов</div>';
   });
+}
+
+function filterContacts() {
+  const searchTerm = document.getElementById('search-contact').value.toLowerCase();
+  const filteredContacts = allContacts.filter(contact => 
+    contact.name && contact.name.toLowerCase().includes(searchTerm)
+  );
+  const contactsList = document.getElementById('contacts-list');
+  contactsList.innerHTML = '';
+  
+  filteredContacts.forEach(user => {
+    // Пропускаем текущего пользователя
+    if (user.uid === auth.currentUser?.uid) return;
+    
+    const userName = user.name || 'Пользователь';
+    const contactElement = document.createElement('div');
+    contactElement.className = 'contact';
+    contactElement.innerHTML = `
+      <img src="${user.avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
+      <span>${userName}</span>
+      ${user.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
+    `;
+    contactElement.dataset.uid = user.uid;
+    contactElement.onclick = () => openChat(user.uid, user);
+    contactsList.appendChild(contactElement);
+  });
+  
+  // Если контактов нет
+  if (contactsList.children.length === 0) {
+    contactsList.innerHTML = '<div class="no-contacts">Нет доступных контактов</div>';
+  }
 }
 
 let currentChatUid = null;
@@ -815,35 +836,29 @@ function createTask() {
     alert("Вы должны быть авторизованы");
     return;
   }
-
   const title = document.getElementById('task-title').value;
   const description = document.getElementById('task-description').value;
   const deadline = document.getElementById('task-deadline').value;
   const userId = document.getElementById('task-user').value;
-  
   if (!title || !userId || !deadline) {
     alert("Заполните все обязательные поля");
     return;
   }
-
   const date = new Date(deadline);
   if (isNaN(date)) {
     alert("Неверный формат даты");
     return;
   }
-
   const taskData = {
     title,
     description,
     deadline: date.getTime(),
-    status: 'pending'
+    status: 'pending',
+    timestamp: Date.now() // Добавляем timestamp
   };
-
   const tasksRef = db.ref(`tasks/${userId}`);
   tasksRef.push().set(taskData);
-
   alert("Задача добавлена!");
-  
   // Сброс формы
   document.getElementById('task-title').value = '';
   document.getElementById('task-description').value = '';
@@ -889,7 +904,8 @@ function createPoll() {
 document.addEventListener('DOMContentLoaded', () => {
   // Обработчики для форм
   document.getElementById('show-login').addEventListener('click', showLoginForm);
-  
+  document.getElementById('task-sort').addEventListener('change', loadTasks);
+
   document.getElementById('login-btn').addEventListener('click', () => {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;

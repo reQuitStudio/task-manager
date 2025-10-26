@@ -87,6 +87,7 @@ header {
 }
 
 .theme-toggle button {
+  color: var(--on-surface-variant);
   background: var(--surface-variant);
   border: none;
   width: 44px;
