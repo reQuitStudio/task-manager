@@ -535,7 +535,7 @@ function loadAdminTasks() {
         const userData = userSnapshot.val() || {};
         const userName = userData.name || userId;
         
-        Object.values(tasks[userId]).forEach(task => {
+        Object.entries(tasks[userId]).forEach(([key, task]) => {
           const taskElement = document.createElement('div');
           taskElement.className = 'admin-task-item';
           taskElement.innerHTML = `
@@ -543,10 +543,10 @@ function loadAdminTasks() {
             <p>Задача: ${task.title}</p>
             <p>Статус: ${task.status}</p>
             <div class="task-actions">
-              <button class="btn btn-success" onclick="updateTaskStatus('${userId}', '${task.id}', 'completed')">Выполнено</button>
-              <button class="btn btn-warning" onclick="updateTaskStatus('${userId}', '${task.id}', 'overdue')">Просрочено</button>
-              <button class="btn btn-info" onclick="updateTaskStatus('${userId}', '${task.id}', 'pending')">В ожидании</button>
-              <button class="btn btn-danger" onclick="deleteTask('${userId}', '${task.id}')">Удалить</button>
+              <button class="btn btn-success" onclick="updateTaskStatus('${userId}', '${key}', 'completed')">Выполнено</button>
+              <button class="btn btn-warning" onclick="updateTaskStatus('${userId}', '${key}', 'overdue')">Просрочено</button>
+              <button class="btn btn-info" onclick="updateTaskStatus('${userId}', '${key}', 'pending')">В ожидании</button>
+              <button class="btn btn-danger" onclick="deleteTask('${userId}', '${key}')">Удалить</button>
             </div>
           `;
           tasksList.appendChild(taskElement);
