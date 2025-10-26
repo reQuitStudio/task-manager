@@ -260,7 +260,7 @@ function openChat(uid, name) {
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '';
   
-  const chatRef = db.ref(`chats/${currentUser.uid}_${uid}`);
+  const chatRef = db.ref(`chats/${[currentUser.uid, currentChatUid].sort().join('_')}`);
   chatRef.on('value', snapshot => {
     const messages = snapshot.val() || {};
     messagesContainer.innerHTML = '';
