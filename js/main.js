@@ -231,7 +231,7 @@ function loadMessenger() {
   const usersRef = db.ref('users');
   usersRef.once('value').then(snapshot => {
     const users = snapshot.val() || {};
-    allContacts = Object.values(users);
+    allContacts = Object.entries(users);
     filterContacts(); // Отображаем контакты с фильтрацией
   }).catch(error => {
     console.error("Error loading users:", error);
@@ -241,7 +241,7 @@ function loadMessenger() {
 
 function filterContacts() {
   const searchTerm = document.getElementById('search-contact').value.toLowerCase();
-  const filteredContacts = allContacts.filter(contact => 
+  const filteredContacts = allContacts.filter(([key, contact]) => 
     contact.name && contact.name.toLowerCase().includes(searchTerm)
   );
   const contactsList = document.getElementById('contacts-list');
