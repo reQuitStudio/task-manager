@@ -230,12 +230,12 @@ function loadMessenger() {
       const contactElement = document.createElement('div');
       contactElement.className = 'contact';
       contactElement.innerHTML = `
-        <img src="${userData.avatarUrl || 'default-avatar.png'}" alt="${userName}">
+        <img src="${userData.avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
         <span>${userName}</span>
         ${userData.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
       `;
       contactElement.dataset.uid = uid;
-      contactElement.onclick = () => openChat(uid, userName);
+      contactElement.onclick = () => openChat(uid, userData);
       contactsList.appendChild(contactElement);
     });
     
@@ -251,12 +251,16 @@ function loadMessenger() {
 
 let currentChatUid = null;
 
-function openChat(uid, name) {
+function openChat(uid, udata) {
   currentChatUid = uid;
   const currentUser = auth.currentUser;
   if (!currentUser) return;
-  
-  document.getElementById('chat-title').textContent = name;
+
+  const userName = udata.name || 'Пользователь';
+  const userAvatar = udata.avatarUrl || 'images/default-avatar.webp';
+
+  document.getElementById('chat-title').textContent = userName;
+  document.getElementById('chat-avatar').src = userAvatar;
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '';
   
