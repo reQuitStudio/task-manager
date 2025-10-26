@@ -247,9 +247,9 @@ function filterContacts() {
   const contactsList = document.getElementById('contacts-list');
   contactsList.innerHTML = '';
   
-  filteredContacts.forEach(user => {
+  Object.entries(filteredContacts).forEach(([key, user]) => {
     // Пропускаем текущего пользователя
-    if (user.uid === auth.currentUser?.uid) return;
+    if (key === auth.currentUser?.uid) return;
     
     const userName = user.name || 'Пользователь';
     const contactElement = document.createElement('div');
@@ -259,8 +259,8 @@ function filterContacts() {
       <span>${userName}</span>
       ${user.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
     `;
-    contactElement.dataset.uid = user.uid;
-    contactElement.onclick = () => openChat(user.uid, user);
+    contactElement.dataset.uid = key;
+    contactElement.onclick = () => openChat(key, user);
     contactsList.appendChild(contactElement);
   });
   
