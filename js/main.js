@@ -277,20 +277,19 @@ function loadTopData(tabId) {
   const usersRef = db.ref('users');
   usersRef.once('value').then(snapshot => {
     const users = snapshot.val() || {};
-    let sortedUsers = Object.values(users).filter(user => user.role !== 'admin' && user.name);
     
     switch (tabId) {
       case 'completed':
-        sortedUsers.sort((a, b) => (b.completedTasks || 0) - (a.completedTasks || 0));
+        users.sort((a, b) => (b.completedTasks || 0) - (a.completedTasks || 0));
         break;
       case 'streak':
-        sortedUsers.sort((a, b) => (b.streak || 0) - (a.streak || 0));
+        users.sort((a, b) => (b.streak || 0) - (a.streak || 0));
         break;
       case 'experience':
-        sortedUsers.sort((a, b) => (b.experienceLevel || 0) - (a.experienceLevel || 0));
+        users.sort((a, b) => (b.experienceLevel || 0) - (a.experienceLevel || 0));
         break;
       case 'points':
-        sortedUsers.sort((a, b) => (b.points || 0) - (a.points || 0));
+        users.sort((a, b) => (b.points || 0) - (a.points || 0));
         break;
     }
     
@@ -328,7 +327,7 @@ function loadPolls() {
     const pollsList = document.getElementById('polls-list');
     pollsList.innerHTML = '';
     
-    Object.values(polls).forEach(poll => {
+    Object.entries(polls).forEach(([key, poll]) => {
       const pollElement = document.createElement('div');
       pollElement.className = 'poll-item';
       pollElement.innerHTML = `
@@ -337,12 +336,12 @@ function loadPolls() {
         <div class="poll-options">
           ${poll.options.map((option, index) => `
             <div class="poll-option">
-              <input type="radio" id="option-${poll.id}-${index}" name="poll-${poll.id}" value="${index}">
-              <label for="option-${poll.id}-${index}">${option.text} (${option.votes} голосов)</label>
+              <input type="radio" id="option-${key}-${index}" name="poll-${key}" value="${index}">
+              <label for="option-${key}-${index}">${option.text} (${option.votes} голосов)</label>
             </div>
           `).join('')}
         </div>
-        <button onclick="vote('${poll.id}')">Проголосовать</button>
+        <button onclick="vote('${key}')">Проголосовать</button>
       `;
       pollsList.appendChild(pollElement);
     });
@@ -409,14 +408,14 @@ function loadShop() {
     const shopItems = document.getElementById('shop-items');
     shopItems.innerHTML = '';
     
-    Object.values(items).forEach(item => {
+    Object.entries(items).forEach(([key, item]) => {
       const itemElement = document.createElement('div');
       itemElement.className = 'shop-item';
       itemElement.innerHTML = `
         <img src="${item.image || ''}" alt="${item.name}">
         <h3>${item.name}</h3>
         <p class="price">${item.price} поинтов</p>
-        <button class="buy-btn" onclick="buyItem('${item.id}', ${item.price})">Купить</button>
+        <button class="buy-btn" onclick="buyItem('${key}', ${item.price})">Купить</button>
       `;
       shopItems.appendChild(itemElement);
     });
@@ -563,7 +562,7 @@ function loadAdminPolls() {
     const pollsList = document.getElementById('admin-polls-list');
     pollsList.innerHTML = '';
     
-    Object.values(polls).forEach(poll => {
+    Object.entries(polls).forEach(([key, poll]) => {
       const pollElement = document.createElement('div');
       pollElement.className = 'admin-poll-item';
       pollElement.innerHTML = `
@@ -574,7 +573,7 @@ function loadAdminPolls() {
             <div>${option.text}: ${option.votes} голосов</div>
           `).join('')}
         </div>
-        <button class="btn btn-danger" onclick="deletePoll('${poll.id}')">Удалить</button>
+        <button class="btn btn-danger" onclick="deletePoll('${key}')">Удалить</button>
       `;
       pollsList.appendChild(pollElement);
     });
@@ -588,14 +587,14 @@ function loadAdminShopItems() {
     const shopItems = document.getElementById('admin-shop-items');
     shopItems.innerHTML = '';
     
-    Object.values(items).forEach(item => {
+    Object.entries(items).forEach(([key, item]) => {
       const itemElement = document.createElement('div');
       itemElement.className = 'admin-shop-item';
       itemElement.innerHTML = `
         <img src="${item.image || ''}" alt="${item.name}">
         <h3>${item.name}</h3>
         <p>Цена: ${item.price} поинтов</p>
-        <button class="btn btn-danger" onclick="deleteShopItem('${item.id}')">Удалить</button>
+        <button class="btn btn-danger" onclick="deleteShopItem('${key}')">Удалить</button>
       `;
       shopItems.appendChild(itemElement);
     });
