@@ -905,6 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Обработчики для форм
   document.getElementById('show-login').addEventListener('click', showLoginForm);
   document.getElementById('task-sort').addEventListener('change', loadTasks);
+  document.getElementById('search-contact').addEventListener('input', filterContacts);
 
   document.getElementById('login-btn').addEventListener('click', () => {
     const email = document.getElementById('login-email').value;
