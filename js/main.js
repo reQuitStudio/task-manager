@@ -888,7 +888,6 @@ function createPoll() {
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
   // Обработчики для форм
-  document.getElementById('show-register').addEventListener('click', showRegisterForm);
   document.getElementById('show-login').addEventListener('click', showLoginForm);
   
   document.getElementById('login-btn').addEventListener('click', () => {
