@@ -832,7 +832,6 @@ select:focus {
   background: var(--surface-variant);
   border-radius: var(--radius-md);
   overflow: hidden;
-  padding: 4px;
   width: 100%;
   max-width: 600px;
   margin-top: 10px;
@@ -846,21 +845,18 @@ select:focus {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition);
-  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 6px;
   position: relative;
   flex: 1;
   text-align: center;
-  border: 1px solid var(--border);
   border-bottom: none;
 }
 
 .top-tab.active {
   background: var(--primary);
   color: white;
-  font-weight: 600;
 }
 
 .top-table {
@@ -1082,7 +1078,6 @@ select:focus {
   background: var(--surface-variant);
   border-radius: var(--radius-md);
   overflow: hidden;
-  padding: 4px;
   width: 100%;
   max-width: 600px;
 }
@@ -1102,14 +1097,12 @@ select:focus {
   position: relative;
   flex: 1;
   text-align: center;
-  border: 1px solid var(--border);
   border-bottom: none;
 }
 
 .admin-tab.active {
   background: var(--primary);
   color: white;
-  font-weight: 600;
 }
 
 .admin-form {
@@ -1493,7 +1486,6 @@ body {
   background: var(--surface-variant);
   border-radius: var(--radius-md);
   overflow: hidden;
-  padding: 4px;
   width: 100%;
   max-width: 600px;
   margin-bottom: 15px;
@@ -1513,15 +1505,12 @@ body {
   gap: 6px;
   position: relative;
   flex: 1;
-  text-align: center;
-  border: 1px solid var(--border);
   border-bottom: none;
 }
 
 .admin-tab.active {
   background: var(--primary);
   color: white;
-  font-weight: 600;
 }
 
 /* Исправление управления задачами */
@@ -1532,6 +1521,7 @@ body {
   margin-bottom: 15px;
 }
 
+.login-container input,
 .admin-task-form input,
 .admin-task-form select {
   flex: 1;
