@@ -373,15 +373,20 @@ function openChat(uid, udata) {
             `;
           }
           
+          let edited = '';
+          if (msg.edited) {
+            edited = ' (изменено)';
+          }
+
           messageElement.innerHTML = `
             ${previewHtml}
             ${msg.senderId === currentUser.uid ? `
               <div class="message-actions">
                 <button class="edit-btn" onclick="editMessage('${key}', '${msg.text}')"><i class="fas fa-edit"></i></button>
                 <button class="delete-btn" onclick="deleteMessage('${key}')"><i class="fas fa-trash"></i></button>
-                <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
+                <small>${new Date(msg.timestamp).toLocaleTimeString() + edited}</small>
               </div>
-            ` : ''}
+            ` : `<small>${new Date(msg.timestamp).toLocaleTimeString() + edited}</small>`}
           `;
         } else {
           // Обычное сообщение
@@ -399,7 +404,7 @@ function openChat(uid, udata) {
                 <button class="delete-btn" onclick="deleteMessage('${key}')"><i class="fas fa-trash"></i></button>
                 <small>${new Date(msg.timestamp).toLocaleTimeString() + edited}</small>
               </div>
-            ` : ''}
+            ` : `<small>${new Date(msg.timestamp).toLocaleTimeString() + edited}</small>`}
           `;
         }
         

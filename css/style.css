@@ -758,6 +758,14 @@ select:focus {
   word-break: break-all;
 }
 
+.message img {
+  border-radius: 10px;
+}
+
+.message video {
+  border-radius: 10px;
+}
+
 .message.sent {
   margin-left: auto;
   background: var(--primary);
