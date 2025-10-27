@@ -377,83 +377,88 @@ function openChat(uid, udata) {
   const chatRef = db.ref(`chats/${chatId}`);
   chatRef.on('value', snapshot => {
     const messages = snapshot.val() || {};
-    const lastReadTime = snapshot.val() || 0;
     messagesContainer.innerHTML = '';
     let lastDate = null;
     
-    Object.entries(messages).forEach(([msgId, msg]) => {
-      const messageDate = new Date(msg.timestamp);
-      const currentDate = messageDate.toDateString();
+    // Получаем дату последнего прочитанного сообщения
+    readStatusRef.once('value').then(snapshot => {
+      const lastReadTime = snapshot.val() || 0;
       
-      // Если дата изменилась, добавляем заголовок с датой
-      if (currentDate !== lastDate) {
-        const dateElement = document.createElement('div');
-        dateElement.className = 'message-date';
-        dateElement.textContent = messageDate.toLocaleDateString('ru-RU', { 
-          day: 'numeric', 
-          month: 'long', 
-          year: 'numeric' 
-        });
-        messagesContainer.appendChild(dateElement);
-        lastDate = currentDate;
-      }
-      
-      const messageElement = document.createElement('div');
-      messageElement.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
-      
-      if (msg.isFile) {
-        let fileContent = '';
+      Object.entries(messages).forEach(([msgId, msg]) => {
+        const messageDate = new Date(msg.timestamp);
+        const currentDate = messageDate.toDateString();
         
-        if (msg.fileType.startsWith('image/')) {
-          fileContent = `<img src="${msg.text}" alt="Фото">`;
-        } else if (msg.fileType.startsWith('video/')) {
-          fileContent = `<video controls><source src="${msg.text}" type="${msg.fileType}"></video>`;
+        // Если дата изменилась, добавляем заголовок с датой
+        if (currentDate !== lastDate) {
+          const dateElement = document.createElement('div');
+          dateElement.className = 'message-date';
+          dateElement.textContent = messageDate.toLocaleDateString('ru-RU', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+          });
+          messagesContainer.appendChild(dateElement);
+          lastDate = currentDate;
+        }
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+        
+        if (msg.isFile) {
+          let fileContent = '';
+          
+          // Проверяем, что fileType существует и не undefined
+          if (msg.fileType && msg.fileType.startsWith('image/')) {
+            fileContent = `<img src="${msg.text}" alt="Фото">`;
+          } else if (msg.fileType && msg.fileType.startsWith('video/')) {
+            fileContent = `<video controls><source src="${msg.text}" type="${msg.fileType}"></video>`;
+          } else {
+            fileContent = `
+              <div class="file-preview">
+                <i class="fas fa-file"></i>
+                <span>${msg.fileName || 'Файл'}</span>
+                <span>${msg.fileSize ? formatFileSize(msg.fileSize) : 'неизвестно'}</span>
+                <button class="download-btn" onclick="downloadFile('${msg.text}')">Скачать</button>
+              </div>
+            `;
+          }
+          
+          messageElement.innerHTML = `
+            ${fileContent}
+            <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
+          `;
         } else {
-          fileContent = `
-            <div class="file-preview">
-              <i class="fas fa-file"></i>
-              <span>${msg.fileName}</span>
-              <span>${formatFileSize(msg.fileSize)}</span>
-              <button class="download-btn" onclick="downloadFile('${msg.text}')">Скачать</button>
+          let messageContent = msg.text;
+          
+          if (msg.edited) {
+            messageContent += ' <span class="edited">[изменено]</span>';
+          }
+          
+          messageElement.innerHTML = `
+            <div>${messageContent}</div>
+            <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
+          `;
+        }
+        
+        // Добавляем кнопки для удаления и редактирования только для своих сообщений
+        if (msg.senderId === currentUser.uid) {
+          messageElement.innerHTML += `
+            <div class="message-actions">
+              <button class="edit-btn" onclick="editMessage('${msgId}')">✏️</button>
+              <button class="delete-btn" onclick="deleteMessage('${msgId}')">🗑️</button>
             </div>
           `;
         }
         
-        messageElement.innerHTML = `
-          ${fileContent}
-          <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
-        `;
-      } else {
-        let messageContent = msg.text;
-        
-        if (msg.edited) {
-          messageContent += ' <span class="edited">[изменено]</span>';
+        if (msg.senderId !== currentUser.uid && msg.timestamp <= lastReadTime) {
+          messageElement.classList.add('read');
         }
-        
-        messageElement.innerHTML = `
-          <div>${messageContent}</div>
-          <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
-        `;
-      }
-      
-      // Добавляем кнопки для удаления и редактирования только для своих сообщений
-      if (msg.senderId === currentUser.uid) {
-        messageElement.innerHTML += `
-          <div class="message-actions">
-            <button class="edit-btn" onclick="editMessage('${msgId}')">✏️</button>
-            <button class="delete-btn" onclick="deleteMessage('${msgId}')">🗑️</button>
-          </div>
-        `;
-      }
-      
-      if (msg.senderId !== currentUser.uid && msg.timestamp <= lastReadTime) {
-        messageElement.classList.add('read');
-      }
 
-      messagesContainer.appendChild(messageElement);
+        messagesContainer.appendChild(messageElement);
+      });
+      
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
-    
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   });
 }
 
