@@ -310,14 +310,14 @@ function openChat(uid, udata) {
   const chatRef = db.ref(`chats/${[currentUser.uid, currentChatUid].sort().join('_')}`);
   chatRef.on('value', snapshot => {
     const messages = snapshot.val() || {};
-    const messagesArray = Object.values(messages);
+    const messagesArray = Object.entries(messages);
     
     // Сортируем сообщения по времени
     messagesArray.sort((a, b) => a.timestamp - b.timestamp);
     
     // Группируем по датам
     const groupedMessages = {};
-    messagesArray.forEach(msg => {
+    messagesArray.forEach(([key, msg]) => {
       const date = new Date(msg.timestamp).toLocaleDateString('ru-RU', {
         day: 'numeric',
         month: 'long',
@@ -326,7 +326,7 @@ function openChat(uid, udata) {
       if (!groupedMessages[date]) {
         groupedMessages[date] = [];
       }
-      groupedMessages[date].push(msg);
+      groupedMessages[date].push([key, msg]);
     });
     
     // Очищаем контейнер
@@ -341,7 +341,7 @@ function openChat(uid, udata) {
       messagesContainer.appendChild(dateElement);
       
       // Выводим сообщения для этой даты
-      groupedMessages[date].forEach(msg => {
+      groupedMessages[date].forEach(([key, msg]) => {
         const messageElement = document.createElement('div');
         messageElement.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
         
@@ -377,8 +377,8 @@ function openChat(uid, udata) {
             ${previewHtml}
             ${msg.senderId === currentUser.uid ? `
               <div class="message-actions">
-                <button class="edit-btn" onclick="editMessage('${msg.id}', '${msg.text}')"><i class="fas fa-edit"></i></button>
-                <button class="delete-btn" onclick="deleteMessage('${msg.id}')"><i class="fas fa-trash"></i></button>
+                <button class="edit-btn" onclick="editMessage('${key}', '${msg.text}')"><i class="fas fa-edit"></i></button>
+                <button class="delete-btn" onclick="deleteMessage('${key}')"><i class="fas fa-trash"></i></button>
                 <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
               </div>
             ` : ''}
@@ -395,8 +395,8 @@ function openChat(uid, udata) {
             <div>${text}</div>
             ${msg.senderId === currentUser.uid ? `
               <div class="message-actions">
-                <button class="edit-btn" onclick="editMessage('${msg.id}', '${msg.text}')"><i class="fas fa-edit"></i></button>
-                <button class="delete-btn" onclick="deleteMessage('${msg.id}')"><i class="fas fa-trash"></i></button>
+                <button class="edit-btn" onclick="editMessage('${key}', '${msg.text}')"><i class="fas fa-edit"></i></button>
+                <button class="delete-btn" onclick="deleteMessage('${key}')"><i class="fas fa-trash"></i></button>
                 <small>${new Date(msg.timestamp).toLocaleTimeString() + edited}</small>
               </div>
             ` : ''}
