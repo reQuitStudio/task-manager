@@ -2061,3 +2061,92 @@ input:focus, select:focus, textarea:focus {
     transition: 0.7s;
   }
 }
+
+.message-date {
+  text-align: center;
+  margin: 20px 0;
+  font-weight: bold;
+  color: var(--on-surface-variant);
+  padding: 10px;
+  background: var(--surface-variant);
+  border-radius: var(--radius-md);
+}
+
+.contact .contact-info {
+  flex: 1;
+  margin-left: 10px;
+}
+
+.contact .last-message {
+  font-size: 0.85rem;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.message.read::after {
+  content: '✓';
+  margin-left: 5px;
+  color: var(--success);
+  font-size: 14px;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--surface-variant);
+  border-radius: var(--radius-md);
+  margin: 5px 0;
+}
+
+.file-preview i {
+  font-size: 24px;
+  color: var(--primary);
+}
+
+.file-preview span {
+  flex: 1;
+}
+
+.download-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.download-btn:hover {
+  background: var(--primary-dark);
+}
+
+.edited {
+  color: var(--warning);
+  font-size: 0.8em;
+  margin-left: 5px;
+}
+
+.message-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.message-actions button {
+  background: none;
+  border: none;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 3px;
+}
+
+.message-actions button:hover {
+  color: var(--error);
+}
