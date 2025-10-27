@@ -173,13 +173,14 @@ function loadProfile() {
       document.getElementById('admin-panel-tab').style.display = "none";
     }
 
-    document.getElementById('profile-avatar').src = userData.avatarUrl || '/images/default-avatar.webp';
+    document.getElementById('profile-avatar').src = userData.avatarUrl || 'images/default-avatar.webp';
     document.getElementById('profile-name').textContent = userData.name || 'Имя не указано';
     document.getElementById('profile-id').textContent = currentUser.uid;
     document.getElementById('completed-tasks').textContent = userData.completedTasks || 0;
     document.getElementById('overdue-tasks').textContent = userData.overdueTasks || 0;
     document.getElementById('pending-tasks').textContent = userData.pendingTasks || 0;
-    document.getElementById('experience-level').style.width = `${Math.min(userData.experienceLevel * 20, 100)}%`;
+    document.getElementById('experience-level').style.width = `${userData.experienceLevel % 100}%`;
+    document.getElementById('experience-level-value').textContent = `${userData.experienceLevel % 100} опыта / ${Math.floor(userData.experienceLevel / 100)} уровень`;
     document.getElementById('streak').textContent = `${userData.streak || 0} дней`;
     document.getElementById('points').textContent = userData.points || 0;
     document.getElementById('description').textContent = userData.description || 'Описание не указано';
