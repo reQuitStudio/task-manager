@@ -1434,5 +1434,4 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Обработка хэша
   window.addEventListener('hashchange', handleHash);
-  handleHash();
 });
