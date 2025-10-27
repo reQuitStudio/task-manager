@@ -100,6 +100,7 @@ auth.onAuthStateChanged(user => {
   } else {
     document.getElementById('logout-btn').style.display = 'inline-flex';
     handleHash();
+    updateStreak();
   }
 });
 
@@ -160,25 +161,50 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 // Функции для работы с данными
 
 // Загрузка профиля текущего пользователя
+// Загрузка профиля текущего пользователя
 function loadProfile() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
-  
   const userRef = db.ref(`users/${currentUser.uid}`);
-  userRef.once('value').then(snapshot => {
-    const userData = snapshot.val() || {};
+  const tasksRef = db.ref(`tasks/${currentUser.uid}`);
+  
+  Promise.all([
+    userRef.once('value'),
+    tasksRef.once('value')
+  ]).then(([userSnapshot, tasksSnapshot]) => {
+    const userData = userSnapshot.val() || {};
+    const tasks = tasksSnapshot.val() || {};
     
-    if (!(userData.role && userData.role === 'admin'))
-    {
+    // Подсчитываем задачи
+    let completedTasks = 0;
+    let overdueTasks = 0;
+    let pendingTasks = 0;
+    
+    Object.values(tasks).forEach(task => {
+      if (task.status === 'completed') completedTasks++;
+      else if (task.status === 'overdue') overdueTasks++;
+      else if (task.status === 'pending') pendingTasks++;
+    });
+    
+    // Обновляем данные пользователя, если они изменились
+    const updates = {};
+    if (userData.completedTasks !== completedTasks) updates.completedTasks = completedTasks;
+    if (userData.overdueTasks !== overdueTasks) updates.overdueTasks = overdueTasks;
+    if (userData.pendingTasks !== pendingTasks) updates.pendingTasks = pendingTasks;
+    
+    if (Object.keys(updates).length > 0) {
+      userRef.update(updates);
+    }
+    
+    if (!(userData.role && userData.role === 'admin')) {
       document.getElementById('admin-panel-tab').style.display = "none";
     }
-
     document.getElementById('profile-avatar').src = userData.avatarUrl || 'images/default-avatar.webp';
     document.getElementById('profile-name').textContent = userData.name || 'Имя не указано';
     document.getElementById('profile-id').textContent = currentUser.uid;
-    document.getElementById('completed-tasks').textContent = userData.completedTasks || 0;
-    document.getElementById('overdue-tasks').textContent = userData.overdueTasks || 0;
-    document.getElementById('pending-tasks').textContent = userData.pendingTasks || 0;
+    document.getElementById('completed-tasks').textContent = completedTasks;
+    document.getElementById('overdue-tasks').textContent = overdueTasks;
+    document.getElementById('pending-tasks').textContent = pendingTasks;
     document.getElementById('experience-level').style.width = `${userData.experienceLevel % 100}%`;
     document.getElementById('experience-level-value').textContent = `${userData.experienceLevel % 100} опыта / ${Math.floor(userData.experienceLevel / 100)} уровень`;
     document.getElementById('streak').textContent = `${userData.streak || 0} дней`;
@@ -189,6 +215,7 @@ function loadProfile() {
 }
 
 // Загрузка задач
+// Загрузка задач с автоматической проверкой дедлайнов
 function loadTasks() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
@@ -197,10 +224,23 @@ function loadTasks() {
     const tasks = snapshot.val() || {};
     const tasksList = document.getElementById('tasks-list');
     tasksList.innerHTML = '';
-    
     // Получаем текущий тип сортировки
     const sortType = document.getElementById('task-sort').value;
     let tasksArray = Object.values(tasks);
+    
+    // Проверяем и обновляем статусы задач
+    const now = Date.now();
+    const updates = {};
+    
+    Object.entries(tasks).forEach(([taskId, task]) => {
+      if (task.status !== 'completed' && task.deadline < now) {
+        updates[`tasks/${currentUser.uid}/${taskId}/status`] = 'overdue';
+      }
+    });
+    
+    if (Object.keys(updates).length > 0) {
+      db.ref().update(updates);
+    }
     
     // Сортируем задачи
     if (sortType === 'newest') {
@@ -219,11 +259,22 @@ function loadTasks() {
         <div class="task-title">${task.title}</div>
         <div class="task-details">Описание: ${task.description || 'Без описания'}</div>
         <div class="task-details">Срок: ${new Date(task.deadline).toLocaleDateString()}</div>
+        <div class="task-details">Сложность: ${getDifficultyText(task.difficulty)}</div>
         <span class="task-status ${task.status}">${task.status}</span>
       `;
       tasksList.appendChild(taskElement);
     });
   });
+}
+
+// Функция для отображения текста сложности
+function getDifficultyText(difficulty) {
+  switch(difficulty) {
+    case 'easy': return 'Легко';
+    case 'medium': return 'Средне';
+    case 'hard': return 'Сложно';
+    default: return 'Не указано';
+  }
 }
 
 // Загрузка мессенджера
@@ -497,7 +548,7 @@ function loadShop() {
         <img src="${item.image || ''}" alt="${item.name}">
         <h3>${item.name}</h3>
         <p class="price">${item.price} поинтов</p>
-        <button class="buy-btn" onclick="buyItem('${key}', ${item.price})">Купить</button>
+        <button class="btn" onclick="buyItem('${key}', ${item.price})">Купить</button>
       `;
       shopItems.appendChild(itemElement);
     });
@@ -828,14 +879,143 @@ function resetUserPassword(uid) {
   });
 }
 
+// Редактирование профиля
 function editProfile() {
-  alert("Редактирование профиля будет реализовано в следующей версии");
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+  
+  // Получаем текущие данные пользователя
+  const userRef = db.ref(`users/${currentUser.uid}`);
+  userRef.once('value').then(snapshot => {
+    const userData = snapshot.val() || {};
+    
+    // Создаем модальное окно
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Редактировать профиль</h2>
+        <div class="form-group">
+          <label>Имя</label>
+          <input type="text" id="edit-name" value="${userData.name || ''}">
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea id="edit-description" rows="4">${userData.description || ''}</textarea>
+        </div>
+        <button id="save-profile" class="btn btn-primary">Сохранить</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Закрытие модального окна
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
+    
+    // Сохранение изменений
+    document.getElementById('save-profile').addEventListener('click', () => {
+      const newName = document.getElementById('edit-name').value.trim();
+      const newDescription = document.getElementById('edit-description').value.trim();
+      
+      if (!newName) {
+        alert("Имя не может быть пустым");
+        return;
+      }
+      
+      // Обновляем данные в базе
+      userRef.update({
+        name: newName,
+        description: newDescription
+      }).then(() => {
+        alert("Профиль успешно обновлен");
+        document.body.removeChild(modal);
+        loadProfile(); // Обновляем профиль на странице
+      }).catch(error => {
+        console.error("Ошибка обновления профиля:", error);
+        alert("Ошибка при обновлении профиля");
+      });
+    });
+  });
 }
 
+// Смена пароля
 function changePassword() {
-  alert("Смена пароля будет реализована в следующей версии");
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+  
+  // Создаем модальное окно
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2>Сменить пароль</h2>
+      <div class="form-group">
+        <label>Старый пароль</label>
+        <input type="password" id="old-password">
+      </div>
+      <div class="form-group">
+        <label>Новый пароль</label>
+        <input type="password" id="new-password">
+      </div>
+      <div class="form-group">
+        <label>Подтвердите новый пароль</label>
+        <input type="password" id="confirm-password">
+      </div>
+      <button id="change-password-btn" class="btn btn-primary">Изменить пароль</button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Закрытие модального окна
+  modal.querySelector('.close-modal').addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+  
+  // Смена пароля
+  document.getElementById('change-password-btn').addEventListener('click', () => {
+    const oldPassword = document.getElementById('old-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (newPassword !== confirmPassword) {
+      alert("Новые пароли не совпадают");
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      alert("Новый пароль должен быть не менее 6 символов");
+      return;
+    }
+    
+    // Создаем учетные данные с текущим паролем
+    const credential = firebase.auth.EmailAuthProvider.credential(
+      currentUser.email, 
+      oldPassword
+    );
+    
+    // Перезапускаем аутентификацию с текущим паролем
+    currentUser.reauthenticateWithCredential(credential).then(() => {
+      // Меняем пароль
+      currentUser.updatePassword(newPassword).then(() => {
+        alert("Пароль успешно изменен");
+        document.body.removeChild(modal);
+      }).catch(error => {
+        console.error("Ошибка изменения пароля:", error);
+        alert("Ошибка при изменении пароля: " + error.message);
+      });
+    }).catch(error => {
+      console.error("Ошибка аутентификации:", error);
+      alert("Неверный старый пароль: " + error.message);
+    });
+  });
 }
 
+// Обновление функции создания задачи для добавления сложности
 function createTask() {
   const currentUser = auth.currentUser;
   if (!currentUser) {
@@ -845,6 +1025,7 @@ function createTask() {
   const title = document.getElementById('task-title').value;
   const description = document.getElementById('task-description').value;
   const deadline = document.getElementById('task-deadline').value;
+  const difficulty = document.getElementById('task-difficulty').value || 'easy';
   const userId = document.getElementById('task-user').value;
   if (!title || !userId || !deadline) {
     alert("Заполните все обязательные поля");
@@ -861,7 +1042,8 @@ function createTask() {
     deadline: date.getTime(),
     status: 'pending',
     timestamp: Date.now(),
-    author: currentUser.uid
+    author: currentUser.uid,
+    difficulty: difficulty
   };
   const tasksRef = db.ref(`tasks/${userId}`);
   tasksRef.push().set(taskData);
@@ -870,6 +1052,69 @@ function createTask() {
   document.getElementById('task-title').value = '';
   document.getElementById('task-description').value = '';
   document.getElementById('task-deadline').value = '';
+}
+
+// Обновление статуса задачи с начислением опыта и поинтов
+function updateTaskStatus(userId, taskId, status) {
+  const taskRef = db.ref(`tasks/${userId}/${taskId}`);
+  taskRef.once('value').then(snapshot => {
+    const task = snapshot.val();
+    if (!task) return;
+    
+    // Если задача уже завершена, не делаем ничего
+    if (task.status === 'completed' && status === 'completed') {
+      alert("Задача уже завершена");
+      return;
+    }
+    
+    // Если задача переводится в статус "completed"
+    if (status === 'completed' && task.status !== 'completed') {
+      const userRef = db.ref(`users/${userId}`);
+      userRef.once('value').then(snapshot => {
+        const userData = snapshot.val() || {};
+        
+        // Начисляем опыт и поинты в зависимости от сложности
+        let experience = 0;
+        let points = 0;
+        
+        switch(task.difficulty) {
+          case 'hard':
+            experience = 25;
+            points = 10;
+            break;
+          case 'medium':
+            experience = 15;
+            points = 6;
+            break;
+          case 'easy':
+            experience = 5;
+            points = 3;
+            break;
+          default:
+            experience = 5;
+            points = 3;
+        }
+        
+        // Обновляем данные пользователя
+        const newExperience = (userData.experienceLevel || 0) + experience;
+        const newPoints = (userData.points || 0) + points;
+        
+        userRef.update({
+          experienceLevel: newExperience,
+          points: newPoints
+        });
+      });
+    }
+    
+    // Обновляем статус задачи
+    taskRef.update({ status })
+      .then(() => {
+        alert(`Статус задачи изменен на "${status}"`);
+      })
+      .catch(error => {
+        console.error("Ошибка обновления статуса:", error);
+      });
+  });
 }
 
 function createPoll() {
@@ -907,6 +1152,58 @@ function createPoll() {
   alert("Голосование создано!");
 }
 
+// Обновление streak при загрузке
+function updateStreak() {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+  
+  const userRef = db.ref(`users/${currentUser.uid}`);
+  const today = new Date().toISOString().split('T')[0]; // Формат YYYY-MM-DD
+  
+  userRef.once('value').then(snapshot => {
+    const userData = snapshot.val() || {};
+    const streakDates = userData.streakDates || [];
+    
+    // Если сегодняшняя дата уже есть, ничего не делаем
+    if (streakDates.includes(today)) {
+      return;
+    }
+    
+    // Добавляем сегодняшнюю дату
+    const newStreakDates = [...streakDates, today];
+    
+    // Подсчитываем текущий streak
+    let newStreak = 0;
+    const sortedDates = [...newStreakDates].sort().reverse();
+    let currentDate = new Date(today);
+    
+    // Проверяем последовательность дней
+    for (let i = 0; i < sortedDates.length; i++) {
+      const date = new Date(sortedDates[i]);
+      const diffTime = Math.abs(currentDate - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+      
+      if (diffDays === 0) {
+        newStreak++;
+        // Переходим к предыдущему дню
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else if (diffDays === 1) {
+        newStreak++;
+        currentDate = date;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    // Обновляем данные в базе
+    userRef.update({
+      streakDates: newStreakDates,
+      streak: newStreak
+    });
+  });
+}
+
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
   // Обработчики для форм
@@ -921,6 +1218,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(() => {
         document.getElementById('login-error').textContent = '';
         handleHash();
+        updateStreak();
       })
       .catch(error => {
         document.getElementById('login-error').textContent = error.message;
