@@ -170,10 +170,10 @@ function loadProfile() {
     
     if (!(userData.role && userData.role === 'admin'))
     {
-      document.getElementById('admin-panel-tab').style.visibility = "hidden";
+      document.getElementById('admin-panel-tab').style.display = "none";
     }
 
-    document.getElementById('profile-avatar').src = userData.avatarUrl || '';
+    document.getElementById('profile-avatar').src = userData.avatarUrl || '/images/default-avatar.webp';
     document.getElementById('profile-name').textContent = userData.name || 'Имя не указано';
     document.getElementById('profile-id').textContent = currentUser.uid;
     document.getElementById('completed-tasks').textContent = userData.completedTasks || 0;

@@ -96,6 +96,7 @@ header {
   z-index: 1000;
   transition: var(--transition);
   border-radius: var(--radius-md);
+  border: 1px solid var(--border);
 }
 
 .theme-toggle {
@@ -118,6 +119,7 @@ header {
   transition: var(--transition);
   position: relative;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .theme-toggle button::after {
@@ -135,6 +137,8 @@ header {
   background: var(--surface);
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
+  border-color: var(--primary-light);
+  color: var(--primary-light);
 }
 
 .theme-toggle button:active::after {
@@ -164,6 +168,7 @@ nav a {
   white-space: nowrap;
   position: relative;
   font-size: 0.95rem;
+  border: 1px solid #00000000;
 }
 
 nav a::before {
@@ -183,6 +188,7 @@ nav a:hover {
   color: var(--primary);
   background: var(--surface-variant);
   transform: translateY(-2px);
+  border: 1px solid var(--border);
 }
 
 nav a:hover::before {
@@ -215,6 +221,7 @@ main {
   padding: 28px;
   box-shadow: var(--shadow);
   transition: var(--transition);
+  border: 1px solid var(--border);
 }
 
 .section.active {
@@ -236,25 +243,12 @@ main {
 .profile-card {
   background: var(--surface);
   border-radius: var(--radius-lg);
-  padding: 35px;
-  box-shadow: var(--shadow);
   text-align: center;
-  max-width: 650px;
-  margin: 0 auto;
+  margin: 0 0;
   position: relative;
   overflow: hidden;
   transition: var(--transition);
-}
-
-.profile-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
-  opacity: 0.8;
+  max-width: 650px;
 }
 
 .avatar-container {
@@ -269,7 +263,7 @@ main {
   height: 140px;
   border-radius: var(--radius-full);
   object-fit: cover;
-  border: 3px solid var(--primary);
+  border: 1px solid var(--border);
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
   transition: var(--transition);
 }
@@ -295,7 +289,7 @@ main {
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   transition: var(--transition);
-  border: 2px solid var(--surface);
+  border: 0px;
 }
 
 .edit-avatar:hover {
@@ -322,26 +316,10 @@ main {
   box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: var(--primary);
-  opacity: 0;
-  transition: var(--transition);
-}
-
 .stat-card:hover {
   transform: translateY(-6px);
   box-shadow: var(--shadow-hover);
   border-color: var(--primary-light);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
 }
 
 .stat-icon {
@@ -432,7 +410,10 @@ main {
 }
 
 @keyframes shimmer {
-  100% {
+  from {
+    transform: translateX(-100px);
+  }
+  to {
     transform: translateX(100%);
   }
 }
@@ -446,8 +427,22 @@ main {
 }
 
 .profile-section {
-  margin: 25px 0;
-  padding: 0 10px;
+  margin: 10px 0;
+  padding: 10px 10px;
+  background: var(--surface-variant);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  text-align: center;
+  max-width: 650px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.profile-section:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--primary-light);
 }
 
 .section-title {
@@ -472,22 +467,6 @@ main {
   height: 14px;
   background: var(--primary);
   border-radius: 2px;
-}
-
-.description, .professions {
-  background: var(--surface-variant);
-  border-radius: var(--radius-md);
-  padding: 18px;
-  text-align: left;
-  line-height: 1.6;
-  border-left: 3px solid var(--primary-light);
-  transition: var(--transition);
-}
-
-.description:hover, .professions:hover {
-  background: var(--surface);
-  border-left-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 .profile-actions {
@@ -658,6 +637,7 @@ select:focus {
   display: flex;
   flex-direction: column;
   transition: var(--transition);
+  border: 1px solid var(--border);
 }
 
 .contacts-header {
@@ -687,11 +667,13 @@ select:focus {
   cursor: pointer;
   transition: var(--transition);
   background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .contact:hover {
   background: var(--surface-variant);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  border-color: var(--primary-light);
 }
 
 .contact img {
@@ -714,6 +696,7 @@ select:focus {
   flex-direction: column;
   box-shadow: var(--shadow);
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .chat-header {
@@ -808,6 +791,7 @@ select:focus {
 .input-area input {
   flex: 1;
   padding: 10px 15px;
+  margin-left: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-variant);
@@ -853,6 +837,7 @@ select:focus {
   width: 100%;
   max-width: 600px;
   margin-top: 10px;
+  border: 1px solid var(--border);
 }
 
 .top-tab {
@@ -881,7 +866,7 @@ select:focus {
   background: var(--surface);
   border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
 }
 
 .top-table table {
@@ -932,8 +917,8 @@ select:focus {
   border-radius: var(--radius-md);
   padding: 20px;
   margin-top: 16px;
-  box-shadow: var(--shadow);
   transition: var(--transition);
+  border: 1px solid var(--border);
 }
 
 .poll-item h3 {
@@ -1036,11 +1021,13 @@ select:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
+  border: 1px solid var(--border);
 }
 
 .shop-item:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-hover);
+  border-color: var(--primary-light);
 }
 
 .shop-item img {
@@ -1063,22 +1050,6 @@ select:focus {
   color: var(--primary);
   margin-bottom: 15px;
   text-align: center;
-}
-
-.shop-item .buy-btn {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-  width: 100%;
-  max-width: 150px;
-}
-
-.shop-item .buy-btn:hover {
-  background: var(--primary-dark);
 }
 
 /* Админ панель */
@@ -1244,6 +1215,7 @@ select:focus {
   box-shadow: 0 4px 10px rgba(33, 150, 243, 0.25);
   position: relative;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .btn::after {
@@ -1261,6 +1233,7 @@ select:focus {
   background: var(--primary-dark);
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(33, 150, 243, 0.35);
+  border-color: var(--primary-light);
 }
 
 .btn:hover::after {
@@ -1280,11 +1253,13 @@ select:focus {
   background: var(--surface-variant);
   color: var(--on-surface);
   box-shadow: none;
+  border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
   background: var(--surface);
   color: var(--primary);
+  border-color: var(--primary-light);
 }
 
 /* Улучшена типографика */
