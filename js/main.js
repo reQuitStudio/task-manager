@@ -122,7 +122,6 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 // Функции для работы с данными
 
 // Загрузка профиля текущего пользователя
-// Загрузка профиля текущего пользователя
 function loadProfile() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
@@ -1363,6 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentUser) {
           db.ref(`users/${currentUser.uid}`).update({ avatarUrl: url });
         }
+        loadProfile();
       }
     });
   });
