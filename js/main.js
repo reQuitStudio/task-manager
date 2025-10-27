@@ -1283,6 +1283,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
+  // Добавляем обработчик для мобильного меню
+  document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+    document.querySelector('nav').classList.toggle('active');
+  });
+
+  // Закрывать меню при клике на ссылки
+  document.querySelectorAll('nav a').forEach(link => {
+    link.addEventListener('click', function() {
+      document.querySelector('nav').classList.remove('active');
+    });
+  });
+
+  document.addEventListener('click', function(e) {
+    const nav = document.querySelector('nav');
+    const menuBtn = document.getElementById('mobile-menu-btn');
+  
+    if (!nav.contains(e.target) && !menuBtn.contains(e.target) && nav.classList.contains('active')) {
+      nav.classList.remove('active');
+    }
+  });
+
   // Загрузка профиля при старте
   if (auth.currentUser) {
     loadProfile();
