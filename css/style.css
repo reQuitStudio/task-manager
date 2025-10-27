@@ -2065,8 +2065,9 @@ input:focus, select:focus, textarea:focus {
 .message-date {
   text-align: center;
   margin: 20px 0;
-  font-weight: bold;
   color: var(--on-surface-variant);
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .file-preview {
@@ -2074,12 +2075,14 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 10px;
   padding: 10px;
+  border-radius: 10px;
   background: var(--surface-variant);
-  border-radius: var(--radius-md);
+  max-width: 300px;
 }
 
 .file-preview i {
   font-size: 24px;
+  color: var(--on-surface-variant);
 }
 
 .file-preview div {
@@ -2087,42 +2090,33 @@ input:focus, select:focus, textarea:focus {
 }
 
 .download-btn {
-  background: var(--primary);
-  color: white;
+  background: none;
   border: none;
-  border-radius: var(--radius-md);
-  padding: 5px 10px;
+  color: var(--primary);
   cursor: pointer;
+  font-size: 16px;
+  transition: var(--transition);
 }
 
-.edited-tag {
-  color: var(--on-surface-variant);
-  font-size: 0.8em;
-  margin-left: 5px;
+.download-btn:hover {
+  color: var(--primary-dark);
 }
 
 .message-actions {
   display: flex;
   gap: 5px;
   margin-top: 5px;
-  justify-content: flex-end;
 }
 
 .message-actions button {
-  background: var(--surface-variant);
-  color: var(--on-surface);
+  background: none;
   border: none;
-  border-radius: var(--radius-md);
-  padding: 3px 8px;
-  font-size: 0.8em;
+  color: var(--on-surface-variant);
   cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
 }
 
-.last-message {
-  font-size: 0.85em;
-  color: var(--on-surface-variant);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 3px;
+.message-actions button:hover {
+  color: var(--error);
 }
