@@ -104,45 +104,6 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Улучшите функцию handleHash для дополнительной проверки
-function handleHash() {
-  const user = auth.currentUser;
-  const hash = window.location.hash.substring(1);
-  
-  // Если пользователь не авторизован, но пытается открыть защищенную секцию
-  if (!user && hash && hash !== 'login' && hash !== 'register') {
-    window.location.hash = 'login';
-    return;
-  }
-  
-  // Очищаем все секции
-  document.querySelectorAll('.section').forEach(section => {
-    section.classList.remove('active');
-  });
-  
-  // Если хэш пустой или пользователь авторизован и пытается открыть защищенную секцию
-  if (!hash || (user && hash !== 'login' && hash !== 'register')) {
-    const sectionId = hash || 'profile';
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.classList.add('active');
-      
-      // Загрузка данных для текущей секции
-      if (sectionId === 'profile') loadProfile();
-      if (sectionId === 'tasks') loadTasks();
-      if (sectionId === 'messenger') loadMessenger();
-      if (sectionId === 'top') loadTop();
-      if (sectionId === 'polls') loadPolls();
-      if (sectionId === 'shop') loadShop();
-      if (sectionId === 'admin') loadAdmin();
-      if (sectionId === 'global-chat') loadGlobalChat(); // Для нового глобального чата
-    }
-  } else {
-    // Показываем форму входа/регистрации
-    document.getElementById(hash).classList.add('active');
-  }
-}
-
 // Выход из системы
 document.getElementById('logout-btn').addEventListener('click', () => {
   auth.signOut().then(() => {
@@ -289,7 +250,6 @@ function loadMessenger() {
   if (!currentUser) return;
   const contactsList = document.getElementById('contacts-list');
   contactsList.innerHTML = '<div class="loading">Загрузка контактов...</div>';
-  
   // Получаем всех пользователей из базы данных
   const usersRef = db.ref('users');
   usersRef.once('value').then(snapshot => {
@@ -300,6 +260,92 @@ function loadMessenger() {
     console.error("Error loading users:", error);
     contactsList.innerHTML = '<div class="error">Ошибка загрузки контактов</div>';
   });
+  
+  // Добавляем обработчик для чата
+  if (currentChatUid) {
+    const chatId = [currentUser.uid, currentChatUid].sort().join('_');
+    const chatRef = db.ref(`chats/${chatId}`);
+    chatRef.on('value', snapshot => {
+      const messages = snapshot.val() || {};
+      const messagesContainer = document.getElementById('messages-container');
+      messagesContainer.innerHTML = '';
+      
+      // Группируем сообщения по датам
+      const groupedMessages = {};
+      Object.entries(messages).forEach(([messageId, msg]) => {
+        const date = new Date(msg.timestamp);
+        const dateString = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+        if (!groupedMessages[dateString]) {
+          groupedMessages[dateString] = [];
+        }
+        groupedMessages[dateString].push({ messageId, ...msg });
+      });
+      
+      // Отображаем сообщения по датам
+      Object.keys(groupedMessages).forEach(date => {
+        const dateElement = document.createElement('div');
+        dateElement.className = 'message-date';
+        dateElement.textContent = date;
+        messagesContainer.appendChild(dateElement);
+        
+        groupedMessages[date].forEach(({ messageId, ...msg }) => {
+          const messageElement = document.createElement('div');
+          messageElement.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+          
+          if (msg.isFile) {
+            // Обработка файлов
+            let filePreview = '';
+            if (msg.fileType.startsWith('image/')) {
+              filePreview = `<img src="${msg.text}" alt="${msg.fileName}" style="max-width: 200px; max-height: 200px;">`;
+            } else if (msg.fileType.startsWith('video/')) {
+              filePreview = `<video src="${msg.text}" controls style="max-width: 200px; max-height: 200px;"></video>`;
+            } else {
+              filePreview = `
+                <div class="file-preview">
+                  <i class="fas fa-file"></i>
+                  <div>
+                    <div>${msg.fileName}</div>
+                    <div>${(msg.fileSize / 1024).toFixed(1)} KB</div>
+                  </div>
+                  <button class="download-btn" onclick="downloadFile('${msg.text}', '${msg.fileName}')">Скачать</button>
+                </div>
+              `;
+            }
+            
+            messageElement.innerHTML = `
+              <div class="file-content">
+                ${filePreview}
+                <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
+              </div>
+            `;
+          } else {
+            // Обычное сообщение
+            let text = msg.text;
+            if (msg.edited) {
+              text += ' <span class="edited-tag">(изменено)</span>';
+            }
+            messageElement.innerHTML = `
+              <div>${text}</div>
+              <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
+            `;
+          }
+          
+          // Добавляем кнопки для удаления и редактирования
+          if (msg.senderId === currentUser.uid) {
+            messageElement.innerHTML += `
+              <div class="message-actions">
+                <button class="edit-btn" onclick="editMessage('${messageId}', '${msg.text}')">Редактировать</button>
+                <button class="delete-btn" onclick="deleteMessage('${messageId}')">Удалить</button>
+              </div>
+            `;
+          }
+          
+          messagesContainer.appendChild(messageElement);
+        });
+      });
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+  }
 }
 
 function filterContacts() {
@@ -310,42 +356,44 @@ function filterContacts() {
   const contactsList = document.getElementById('contacts-list');
   contactsList.innerHTML = '';
   
-  // Для каждого контакта получаем последнее сообщение
+  // Получаем последние сообщения для каждого контакта
+  const contactsWithLastMessage = [];
   filteredContacts.forEach(([key, user]) => {
+    // Пропускаем текущего пользователя
     if (key === auth.currentUser?.uid) return;
     
-    const userName = user.name || 'Пользователь';
-    const contactElement = document.createElement('div');
-    contactElement.className = 'contact';
-    
-    // Получаем последнее сообщение из чата
     const chatId = [auth.currentUser.uid, key].sort().join('_');
-    const chatRef = db.ref(`chats/${chatId}`);
-    chatRef.orderByChild('timestamp').limitToLast(1).once('value').then(snapshot => {
-      let lastMessage = '';
-      if (snapshot.exists()) {
-        const lastMsg = Object.values(snapshot.val())[0];
-        if (lastMsg.isFile) {
-          lastMessage = '[Файл]';
-        } else {
-          lastMessage = lastMsg.text;
-          if (lastMessage.length > 30) {
-            lastMessage = lastMessage.substring(0, 30) + '...';
-          }
-        }
-      }
+    const lastMessageRef = db.ref(`chats/${chatId}/lastMessage`);
+    lastMessageRef.once('value').then(snapshot => {
+      const lastMessage = snapshot.val();
+      contactsWithLastMessage.push({
+        user,
+        lastMessage
+      });
       
-      contactElement.innerHTML = `
-        <img src="${user.avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
-        <div class="contact-info">
-          <span class="contact-name">${userName}</span>
-          <span class="last-message">${lastMessage}</span>
-        </div>
-        ${user.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
-      `;
-      contactElement.dataset.uid = key;
-      contactElement.onclick = () => openChat(key, user);
-      contactsList.appendChild(contactElement);
+      // Когда все контакты обработаны, отображаем их
+      if (contactsWithLastMessage.length === filteredContacts.length) {
+        contactsWithLastMessage.forEach(({ user, lastMessage }) => {
+          const userName = user[1].name || 'Пользователь';
+          const lastMessageText = lastMessage ? 
+            (lastMessage.isFile ? '[Файл]' : lastMessage.text) : 
+            'Нет сообщений';
+          
+          const contactElement = document.createElement('div');
+          contactElement.className = 'contact';
+          contactElement.innerHTML = `
+            <img src="${user[1].avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
+            <div>
+              <span>${userName}</span>
+              <p class="last-message">${lastMessageText}</p>
+            </div>
+            ${user[1].online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
+          `;
+          contactElement.dataset.uid = user[0];
+          contactElement.onclick = () => openChat(user[0], user[1]);
+          contactsList.appendChild(contactElement);
+        });
+      }
     });
   });
   
@@ -365,178 +413,127 @@ function openChat(uid, udata) {
   const userAvatar = udata.avatarUrl || 'images/default-avatar.webp';
   document.getElementById('chat-title').textContent = userName;
   document.getElementById('chat-avatar').src = userAvatar;
-  const messagesContainer = document.getElementById('messages-container');
-  messagesContainer.innerHTML = '';
-  
-  // Отмечаем все сообщения как прочитанные
-  const chatId = [currentUser.uid, currentChatUid].sort().join('_');
-  const readStatusRef = db.ref(`readStatus/${currentUser.uid}/${chatId}`);
-  readStatusRef.set(Date.now());
-  
-  // Получаем сообщения
-  const chatRef = db.ref(`chats/${chatId}`);
-  chatRef.on('value', snapshot => {
-    const messages = snapshot.val() || {};
-    messagesContainer.innerHTML = '';
-    let lastDate = null;
-    
-    // Получаем дату последнего прочитанного сообщения
-    readStatusRef.once('value').then(snapshot => {
-      const lastReadTime = snapshot.val() || 0;
-      
-      Object.entries(messages).forEach(([msgId, msg]) => {
-        const messageDate = new Date(msg.timestamp);
-        const currentDate = messageDate.toDateString();
-        
-        // Если дата изменилась, добавляем заголовок с датой
-        if (currentDate !== lastDate) {
-          const dateElement = document.createElement('div');
-          dateElement.className = 'message-date';
-          dateElement.textContent = messageDate.toLocaleDateString('ru-RU', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric' 
-          });
-          messagesContainer.appendChild(dateElement);
-          lastDate = currentDate;
-        }
-        
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
-        
-        if (msg.isFile) {
-          let fileContent = '';
-          
-          // Проверяем, что fileType существует и не undefined
-          if (msg.fileType && msg.fileType.startsWith('image/')) {
-            fileContent = `<img src="${msg.text}" alt="Фото">`;
-          } else if (msg.fileType && msg.fileType.startsWith('video/')) {
-            fileContent = `<video controls><source src="${msg.text}" type="${msg.fileType}"></video>`;
-          } else {
-            fileContent = `
-              <div class="file-preview">
-                <i class="fas fa-file"></i>
-                <span>${msg.fileName || 'Файл'}</span>
-                <span>${msg.fileSize ? formatFileSize(msg.fileSize) : 'неизвестно'}</span>
-                <button class="download-btn" onclick="downloadFile('${msg.text}')">Скачать</button>
-              </div>
-            `;
-          }
-          
-          messageElement.innerHTML = `
-            ${fileContent}
-            <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
-          `;
-        } else {
-          let messageContent = msg.text;
-          
-          if (msg.edited) {
-            messageContent += ' <span class="edited">[изменено]</span>';
-          }
-          
-          messageElement.innerHTML = `
-            <div>${messageContent}</div>
-            <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
-          `;
-        }
-        
-        // Добавляем кнопки для удаления и редактирования только для своих сообщений
-        if (msg.senderId === currentUser.uid) {
-          messageElement.innerHTML += `
-            <div class="message-actions">
-              <button class="edit-btn" onclick="editMessage('${msgId}')">✏️</button>
-              <button class="delete-btn" onclick="deleteMessage('${msgId}')">🗑️</button>
-            </div>
-          `;
-        }
-        
-        if (msg.senderId !== currentUser.uid && msg.timestamp <= lastReadTime) {
-          messageElement.classList.add('read');
-        }
-
-        messagesContainer.appendChild(messageElement);
-      });
-      
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    });
-  });
-}
-
-function editMessage(msgId) {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return;
-  
-  const chatId = [currentUser.uid, currentChatUid].sort().join('_');
-  const chatRef = db.ref(`chats/${chatId}`);
-  
-  chatRef.child(msgId).once('value').then(snapshot => {
-    const msg = snapshot.val();
-    
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h2>Редактировать сообщение</h2>
-        <div class="form-group">
-          <textarea id="edit-message-text">${msg.text}</textarea>
-        </div>
-        <button id="save-edited-message" class="btn btn-primary">Сохранить</button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    
-    modal.querySelector('.close-modal').addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
-    
-    document.getElementById('save-edited-message').addEventListener('click', () => {
-      const newText = document.getElementById('edit-message-text').value;
-      chatRef.child(msgId).update({
-        text: newText,
-        edited: true,
-        editedAt: Date.now()
-      });
-      document.body.removeChild(modal);
-    });
-  });
-}
-
-function deleteMessage(msgId) {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return;
-  
-  const chatId = [currentUser.uid, currentChatUid].sort().join('_');
-  const chatRef = db.ref(`chats/${chatId}`);
-  
-  chatRef.child(msgId).remove();
-}
-
-function downloadFile(url) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = url.split('/').pop();
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // Показываем чат
+  document.querySelector('.chat-window').style.display = 'flex';
+  // Загружаем сообщения
+  loadMessenger();
 }
 
 function sendMessage() {
   const currentUser = auth.currentUser;
   const messageInput = document.getElementById('message-input');
   const messageText = messageInput.value.trim();
-  
   if (!messageText || !currentChatUid) return;
   
   const chatId = [currentUser.uid, currentChatUid].sort().join('_');
   const messageRef = db.ref(`chats/${chatId}`).push();
+  const messageId = messageRef.key;
   messageRef.set({
+    text: messageText,
+    senderId: currentUser.uid,
+    timestamp: Date.now(),
+    id: messageId
+  });
+  
+  // Обновляем последнее сообщение для этого чата
+  const lastMessageRef = db.ref(`chats/${chatId}/lastMessage`);
+  lastMessageRef.set({
     text: messageText,
     senderId: currentUser.uid,
     timestamp: Date.now()
   });
   
   messageInput.value = '';
+}
+
+function editMessage(messageId, originalText) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+  
+  // Создаем модальное окно
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2>Редактировать сообщение</h2>
+      <div class="form-group">
+        <label>Текст сообщения</label>
+        <textarea id="edit-message-text" rows="4">${originalText}</textarea>
+      </div>
+      <button id="save-edit-btn" class="btn btn-primary">Сохранить</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  // Закрытие модального окна
+  modal.querySelector('.close-modal').addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+  
+  // Сохранение изменений
+  document.getElementById('save-edit-btn').addEventListener('click', () => {
+    const newText = document.getElementById('edit-message-text').value.trim();
+    if (!newText) {
+      alert("Сообщение не может быть пустым");
+      return;
+    }
+    
+    const chatId = [currentUser.uid, currentChatUid].sort().join('_');
+    const messageRef = db.ref(`chats/${chatId}/${messageId}`);
+    messageRef.update({
+      text: newText,
+      edited: true,
+      editedAt: Date.now()
+    });
+    
+    // Обновляем последнее сообщение для этого чата
+    const lastMessageRef = db.ref(`chats/${chatId}/lastMessage`);
+    lastMessageRef.set({
+      text: newText,
+      senderId: currentUser.uid,
+      timestamp: Date.now(),
+      edited: true
+    });
+    
+    document.body.removeChild(modal);
+  });
+}
+
+function deleteMessage(messageId) {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+  
+  const chatId = [currentUser.uid, currentChatUid].sort().join('_');
+  const messageRef = db.ref(`chats/${chatId}/${messageId}`);
+  messageRef.remove();
+  
+  // Обновляем последнее сообщение, если удаляется последнее
+  const chatRef = db.ref(`chats/${chatId}`);
+  chatRef.limitToLast(1).once('value').then(snapshot => {
+    const lastMessage = snapshot.val() ? Object.values(snapshot.val())[0] : null;
+    if (lastMessage) {
+      const lastMessageRef = db.ref(`chats/${chatId}/lastMessage`);
+      lastMessageRef.set({
+        text: lastMessage.text,
+        senderId: lastMessage.senderId,
+        timestamp: lastMessage.timestamp,
+        isFile: lastMessage.isFile
+      });
+    } else {
+      const lastMessageRef = db.ref(`chats/${chatId}/lastMessage`);
+      lastMessageRef.remove();
+    }
+  });
+}
+
+function downloadFile(url, fileName) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // Загрузка топа
@@ -946,23 +943,21 @@ async function uploadFile(file) {
     alert("Файл больше 100 МБ!");
     return null;
   }
+  
   const formData = new FormData();
   formData.append('file', file);
+  
   try {
     const response = await fetch('https://noikcloud.xyz/upload', {
       method: 'POST',
       body: formData
     });
+    
     const result = await response.json();
     if (result.error) {
       throw new Error(result.error.message);
     }
-    return {
-      url: result.url,
-      name: file.name,
-      size: file.size,
-      type: file.type
-    };
+    return result.url;
   } catch (error) {
     console.error("Ошибка загрузки файла:", error);
     alert("Ошибка при загрузке файла");
@@ -1363,15 +1358,6 @@ function updateStreak() {
   });
 }
 
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Б';
-  const k = 1024;
-  const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
@@ -1414,20 +1400,31 @@ document.addEventListener('DOMContentLoaded', () => {
 document.getElementById('file-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  uploadFile(file).then(fileInfo => {
-    if (fileInfo) {
+  uploadFile(file).then(url => {
+    if (url) {
       const currentUser = auth.currentUser;
       if (currentUser && currentChatUid) {
         const chatId = [currentUser.uid, currentChatUid].sort().join('_');
         const messageRef = db.ref(`chats/${chatId}`).push();
+        const messageId = messageRef.key;
         messageRef.set({
-          text: fileInfo.url,
+          text: url,
           senderId: currentUser.uid,
           timestamp: Date.now(),
           isFile: true,
-          fileName: fileInfo.name,
-          fileSize: fileInfo.size,
-          fileType: fileInfo.type
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          id: messageId
+        });
+        
+        // Обновляем последнее сообщение для этого чата
+        const lastMessageRef = db.ref(`chats/${chatId}/lastMessage`);
+        lastMessageRef.set({
+          text: '[Файл]',
+          senderId: currentUser.uid,
+          timestamp: Date.now(),
+          isFile: true
         });
       }
     }
