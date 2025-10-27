@@ -24,6 +24,24 @@
   --transition-slow: all 0.5s ease;
 }
 
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #00000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--on-surface-variant);
+}
+
 .dark-theme {
   --primary: #4dabf7;
   --primary-light: #85c1f9;
@@ -746,7 +764,6 @@ select:focus {
   padding: 20px;
   overflow-y: auto;
   background: var(--surface-variant);
-  border-radius: var(--radius-md);
 }
 
 .message {

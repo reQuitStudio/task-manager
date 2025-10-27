@@ -168,6 +168,11 @@ function loadProfile() {
   userRef.once('value').then(snapshot => {
     const userData = snapshot.val() || {};
     
+    if (!(userData.role && userData.role === 'admin'))
+    {
+      document.getElementById('admin-panel-tab').style.visibility = "hidden";
+    }
+
     document.getElementById('profile-avatar').src = userData.avatarUrl || '';
     document.getElementById('profile-name').textContent = userData.name || 'Имя не указано';
     document.getElementById('profile-id').textContent = currentUser.uid;
@@ -417,7 +422,7 @@ function loadPolls() {
             </div>
           `).join('')}
         </div>
-        <button onclick="vote('${key}')">Проголосовать</button>
+        <button class="btn" onclick="vote('${key}')">Проголосовать</button>
       `;
       pollsList.appendChild(pollElement);
     });
@@ -441,7 +446,7 @@ function vote(pollId) {
   const pollRef = db.ref(`polls/${pollId}`);
   
   pollRef.transaction(poll => {
-    if (!poll) return; // poll doesn't exist
+    if (!poll) return;
     
     // Инициализация votedUsers, если не существует
     if (!poll.votedUsers) {
@@ -854,7 +859,8 @@ function createTask() {
     description,
     deadline: date.getTime(),
     status: 'pending',
-    timestamp: Date.now() // Добавляем timestamp
+    timestamp: Date.now(),
+    author: currentUser.uid
   };
   const tasksRef = db.ref(`tasks/${userId}`);
   tasksRef.push().set(taskData);
@@ -918,35 +924,6 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(error => {
         document.getElementById('login-error').textContent = error.message;
-      });
-  });
-  
-  document.getElementById('register-btn').addEventListener('click', () => {
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-    
-    auth.createUserWithEmailAndPassword(email, password)
-      .then(userCredential => {
-        const user = userCredential.user;
-        db.ref(`users/${user.uid}`).set({
-          name: "Новый пользователь",
-          email: email,
-          role: "user",
-          completedTasks: 0,
-          overdueTasks: 0,
-          pendingTasks: 0,
-          experienceLevel: 1,
-          streak: 0,
-          points: 0,
-          avatarUrl: "",
-          description: "Описание не указано",
-          professions: []
-        });
-        document.getElementById('register-error').textContent = '';
-        handleHash();
-      })
-      .catch(error => {
-        document.getElementById('register-error').textContent = error.message;
       });
   });
   
