@@ -249,18 +249,18 @@ function filterContacts() {
   
   Object.entries(filteredContacts).forEach(([key, user]) => {
     // Пропускаем текущего пользователя
-    if (key === auth.currentUser?.uid) return;
+    if (user[0] === auth.currentUser?.uid) return;
     
-    const userName = user.name || 'Пользователь';
+    const userName = user[1].name || 'Пользователь';
     const contactElement = document.createElement('div');
     contactElement.className = 'contact';
     contactElement.innerHTML = `
-      <img src="${user.avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
+      <img src="${user[1].avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
       <span>${userName}</span>
-      ${user.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
+      ${user[1].online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
     `;
-    contactElement.dataset.uid = key;
-    contactElement.onclick = () => openChat(key, user);
+    contactElement.dataset.uid = user[0];
+    contactElement.onclick = () => openChat(user[0], user[1]);
     contactsList.appendChild(contactElement);
   });
   
