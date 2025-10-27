@@ -304,6 +304,7 @@ function openChat(uid, udata) {
   const userAvatar = udata.avatarUrl || 'images/default-avatar.webp';
   document.getElementById('chat-title').textContent = userName;
   document.getElementById('chat-avatar').src = userAvatar;
+  document.getElementById('chat-window').style.removeProperty('display');
   const messagesContainer = document.getElementById('messages-container');
   messagesContainer.innerHTML = '';
   const chatRef = db.ref(`chats/${[currentUser.uid, currentChatUid].sort().join('_')}`);
@@ -374,28 +375,29 @@ function openChat(uid, udata) {
           
           messageElement.innerHTML = `
             ${previewHtml}
-            <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
             ${msg.senderId === currentUser.uid ? `
               <div class="message-actions">
                 <button class="edit-btn" onclick="editMessage('${msg.id}', '${msg.text}')"><i class="fas fa-edit"></i></button>
                 <button class="delete-btn" onclick="deleteMessage('${msg.id}')"><i class="fas fa-trash"></i></button>
+                <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
               </div>
             ` : ''}
           `;
         } else {
           // Обычное сообщение
           let text = msg.text;
+          let edited = '';
           if (msg.edited) {
-            text += ' (изменено)';
+            edited = ' (изменено)';
           }
           
           messageElement.innerHTML = `
             <div>${text}</div>
-            <small>${new Date(msg.timestamp).toLocaleTimeString()}</small>
             ${msg.senderId === currentUser.uid ? `
               <div class="message-actions">
                 <button class="edit-btn" onclick="editMessage('${msg.id}', '${msg.text}')"><i class="fas fa-edit"></i></button>
                 <button class="delete-btn" onclick="deleteMessage('${msg.id}')"><i class="fas fa-trash"></i></button>
+                <small>${new Date(msg.timestamp).toLocaleTimeString() + edited}</small>
               </div>
             ` : ''}
           `;

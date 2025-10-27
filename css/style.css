@@ -778,11 +778,15 @@ select:focus {
 
 .message small {
   font-size: 12px;
-  opacity: 0.8;
-  margin-top: 5px;
+  opacity: 0.6;
   display: block;
 }
 
+.message.sent small {
+  text-align: right;
+  width: 100%;
+}
+  
 .input-area {
   display: flex;
   padding: 15px;
@@ -2111,7 +2115,8 @@ input:focus, select:focus, textarea:focus {
 .message-actions button {
   background: none;
   border: none;
-  color: var(--on-surface-variant);
+  color: var(--on-surface);
+  opacity: 0.6;
   cursor: pointer;
   font-size: 14px;
   transition: var(--transition);
@@ -2119,4 +2124,5 @@ input:focus, select:focus, textarea:focus {
 
 .message-actions button:hover {
   color: var(--error);
+  opacity: 1;
 }
