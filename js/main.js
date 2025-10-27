@@ -485,37 +485,14 @@ function sendMessage() {
   const messageText = messageInput.value.trim();
   if (!messageText && !currentChatUid) return;
   
-  if (messageText) {
-    // Обычное сообщение
-    const chatId = [currentUser.uid, currentChatUid].sort().join('_');
-    const messageRef = db.ref(`chats/${chatId}`).push();
-    messageRef.set({
-      text: messageText,
-      senderId: currentUser.uid,
-      timestamp: Date.now()
-    });
-  } else {
-    // Обработка файла
-    const fileInput = document.getElementById('file-input');
-    const file = fileInput.files[0];
-    if (!file) return;
-    
-    uploadFile(file).then(url => {
-      if (url) {
-        const chatId = [currentUser.uid, currentChatUid].sort().join('_');
-        const messageRef = db.ref(`chats/${chatId}`).push();
-        messageRef.set({
-          text: file.name,
-          senderId: currentUser.uid,
-          timestamp: Date.now(),
-          isFile: true,
-          fileType: file.type,
-          fileSize: file.size,
-          fileUrl: url
-        });
-      }
-    });
-  }
+  // Обычное сообщение
+  const chatId = [currentUser.uid, currentChatUid].sort().join('_');
+  const messageRef = db.ref(`chats/${chatId}`).push();
+  messageRef.set({
+    text: messageText,
+    senderId: currentUser.uid,
+    timestamp: Date.now()
+  });
   
   messageInput.value = '';
 }
@@ -1402,10 +1379,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const chatId = [currentUser.uid, currentChatUid].sort().join('_');
           const messageRef = db.ref(`chats/${chatId}`).push();
           messageRef.set({
-            text: url,
+            text: file.name,
             senderId: currentUser.uid,
             timestamp: Date.now(),
-            isFile: true
+            isFile: true,
+            fileType: file.type,
+            fileSize: file.size,
+            fileUrl: url
           });
         }
       }
