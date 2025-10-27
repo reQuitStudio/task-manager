@@ -112,12 +112,18 @@
       <section id="tasks" class="section">
         <div class="task-header">
           <h2><i class="fas fa-tasks"></i> Мои задачи</h2>
+          <div>
           <div class="task-filters">
             <select id="task-sort">
               <option value="newest">Новые</option>
               <option value="oldest">Старые</option>
               <option value="deadline">Срок выполнения</option>
             </select>
+          </div>
+          <label class="hide-completed">
+              <input type="checkbox" id="hide-completed" checked="">
+              Скрыть выполненные
+            </label>
           </div>
         </div>
         <div id="tasks-list" class="task-list"></div>

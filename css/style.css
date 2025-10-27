@@ -1733,3 +1733,229 @@ input:focus, select:focus, textarea:focus {
   background: var(--surface);
   color: var(--on-surface);
 }
+
+/* Модальное окно */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-content {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: var(--shadow-hover);
+  border: 1px solid var(--border);
+  animation: modalAppear 0.3s cubic-bezier(0.17, 0.67, 0.5, 0.95);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes modalAppear {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.close-modal {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 24px;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  transition: var(--transition);
+  background: var(--surface-variant);
+  border: 1px solid var(--border);
+}
+
+.close-modal:hover {
+  color: var(--error);
+  background: var(--surface);
+  transform: rotate(90deg);
+}
+
+.modal h2 {
+  margin-bottom: 24px;
+  text-align: center;
+  color: var(--on-surface);
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--on-surface);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-variant);
+  color: var(--on-surface);
+  font-family: 'Inter', 'Roboto', sans-serif;
+  transition: var(--transition);
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+  background: var(--surface);
+}
+
+/* Специфичные стили для модального окна смены пароля */
+#old-password,
+#new-password,
+#confirm-password {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-variant);
+  color: var(--on-surface);
+  font-family: 'Inter', 'Roboto', sans-serif;
+  transition: var(--transition);
+}
+
+#change-password-btn {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Специфичные стили для модального окна редактирования профиля */
+#save-profile {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Темная тема для модального окна */
+.dark-theme .modal {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.dark-theme .modal-content {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.dark-theme .form-group input,
+.dark-theme .form-group textarea {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--on-surface);
+}
+
+.dark-theme .close-modal {
+  background: var(--surface-variant);
+  border-color: var(--border);
+  color: var(--on-surface-variant);
+}
+
+.dark-theme .close-modal:hover {
+  color: var(--error);
+  background: var(--surface);
+}
+
+/* Стилизованный чекбокс для скрытия выполненных задач */
+.hide-completed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  color: var(--on-surface-variant);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.hide-completed:hover {
+  background: var(--surface-variant);
+  color: var(--on-surface);
+}
+
+.hide-completed input {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  appearance: none;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.hide-completed input:hover {
+  border-color: var(--primary);
+}
+
+.hide-completed input:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.hide-completed input:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transition: var(--transition);
+}
+
+/* Темная тема */
+.dark-theme .hide-completed input {
+  background: var(--surface-variant);
+  border-color: var(--border);
+}
+
+.dark-theme .hide-completed input:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}

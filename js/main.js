@@ -215,7 +215,6 @@ function loadProfile() {
 }
 
 // Загрузка задач
-// Загрузка задач с автоматической проверкой дедлайнов
 function loadTasks() {
   const currentUser = auth.currentUser;
   if (!currentUser) return;
@@ -226,6 +225,8 @@ function loadTasks() {
     tasksList.innerHTML = '';
     // Получаем текущий тип сортировки
     const sortType = document.getElementById('task-sort').value;
+    // Проверяем, нужно ли скрывать выполненные задачи
+    const hideCompleted = document.getElementById('hide-completed').checked;
     let tasksArray = Object.values(tasks);
     
     // Проверяем и обновляем статусы задач
@@ -240,6 +241,11 @@ function loadTasks() {
     
     if (Object.keys(updates).length > 0) {
       db.ref().update(updates);
+    }
+    
+    // Фильтруем выполненные задачи, если нужно
+    if (hideCompleted) {
+      tasksArray = tasksArray.filter(task => task.status !== 'completed');
     }
     
     // Сортируем задачи
@@ -1209,6 +1215,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Обработчики для форм
   document.getElementById('task-sort').addEventListener('change', loadTasks);
   document.getElementById('search-contact').addEventListener('input', filterContacts);
+  document.getElementById('hide-completed').addEventListener('change', loadTasks);
 
   document.getElementById('login-btn').addEventListener('click', () => {
     const email = document.getElementById('login-email').value;
