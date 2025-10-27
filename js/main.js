@@ -312,14 +312,14 @@ function filterContacts() {
   
   // Для каждого контакта получаем последнее сообщение
   filteredContacts.forEach(([key, user]) => {
-    if (user[0] === auth.currentUser?.uid) return;
+    if (key === auth.currentUser?.uid) return;
     
-    const userName = user[1].name || 'Пользователь';
+    const userName = user.name || 'Пользователь';
     const contactElement = document.createElement('div');
     contactElement.className = 'contact';
     
     // Получаем последнее сообщение из чата
-    const chatId = [auth.currentUser.uid, user[0]].sort().join('_');
+    const chatId = [auth.currentUser.uid, key].sort().join('_');
     const chatRef = db.ref(`chats/${chatId}`);
     chatRef.orderByChild('timestamp').limitToLast(1).once('value').then(snapshot => {
       let lastMessage = '';
@@ -336,15 +336,15 @@ function filterContacts() {
       }
       
       contactElement.innerHTML = `
-        <img src="${user[1].avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
+        <img src="${user.avatarUrl || 'images/default-avatar.webp'}" alt="${userName}">
         <div class="contact-info">
           <span class="contact-name">${userName}</span>
           <span class="last-message">${lastMessage}</span>
         </div>
-        ${user[1].online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
+        ${user.online ? '<div class="status online"></div>' : '<div class="status offline"></div>'}
       `;
-      contactElement.dataset.uid = user[0];
-      contactElement.onclick = () => openChat(user[0], user[1]);
+      contactElement.dataset.uid = key;
+      contactElement.onclick = () => openChat(key, user);
       contactsList.appendChild(contactElement);
     });
   });
