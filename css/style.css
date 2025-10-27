@@ -244,7 +244,7 @@ main {
   background: var(--surface);
   border-radius: var(--radius-lg);
   text-align: center;
-  margin: 0 0;
+  margin: 0 auto;
   position: relative;
   overflow: hidden;
   transition: var(--transition);
@@ -437,6 +437,7 @@ main {
   position: relative;
   overflow: hidden;
   transition: var(--transition);
+  border: 1px solid var(--border);
 }
 
 .profile-section:hover {
