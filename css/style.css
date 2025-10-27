@@ -755,6 +755,7 @@ select:focus {
   max-width: 80%;
   display: flex;
   flex-direction: column;
+  word-break: break-all;
 }
 
 .message.sent {
@@ -790,18 +791,18 @@ select:focus {
 }
 
 .input-area input {
-  flex: 1;
   padding: 10px 15px;
-  margin-left: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-variant);
   color: var(--on-surface);
+  width: 100%;
 }
 
 .file-btn, .send-btn {
   width: 40px;
   height: 40px;
+  min-width: 40px;
   border-radius: var(--radius-full);
   background: var(--primary);
   color: white;
@@ -812,6 +813,10 @@ select:focus {
   justify-content: center;
   margin-left: 10px;
   transition: var(--transition);
+}
+
+.file-btn {
+  margin-right: 10px;
 }
 
 .file-btn:hover, .send-btn:hover {
@@ -1121,6 +1126,7 @@ select:focus {
   border-radius: var(--radius-lg);
   padding: 20px;
   box-shadow: var(--shadow);
+  word-break: break-all;
 }
 
 .admin-user {
@@ -1146,6 +1152,7 @@ select:focus {
   border: none;
   cursor: pointer;
   transition: var(--transition);
+  word-break: keep-all;
 }
 
 .admin-user button.btn-secondary {
@@ -1298,7 +1305,7 @@ input:focus, select:focus, textarea:focus {
   }
   
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(1, 1fr);
   }
   
   .nav a {
@@ -1970,6 +1977,20 @@ input:focus, select:focus, textarea:focus {
   /* Показать кнопку мобильного меню */
   .mobile-menu-toggle {
     display: block;
+    margin-left: auto;
+  }
+
+  .messenger-container {
+    flex-direction: column;
+    height: calc(100vh - 190px);
+  }
+
+  .top-table {
+    padding: 5px;
+  }
+
+  .admin-shop-item {
+    flex-direction: column;
   }
   
   /* Скрыть обычное меню на мобильных устройствах */
