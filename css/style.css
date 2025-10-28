@@ -642,6 +642,7 @@ select:focus {
   flex-direction: column;
   transition: var(--transition);
   border: 1px solid var(--border);
+  overflow: auto;
 }
 
 .contacts-header {
@@ -701,6 +702,7 @@ select:focus {
   box-shadow: var(--shadow);
   overflow: hidden;
   border: 1px solid var(--border);
+  min-height: 500px;
 }
 
 .chat-header {
@@ -1997,7 +1999,8 @@ input:focus, select:focus, textarea:focus {
 
   .messenger-container {
     flex-direction: column;
-    height: calc(100vh - 190px);
+    min-height: calc(100vh - 190px);
+    height: 100%;
   }
 
   .top-table {
@@ -2006,6 +2009,10 @@ input:focus, select:focus, textarea:focus {
 
   .admin-shop-item {
     flex-direction: column;
+  }
+
+  .contacts-list {
+    max-height: 300px;
   }
   
   /* Скрыть обычное меню на мобильных устройствах */
@@ -2025,6 +2032,10 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid var(--border);
     transform: translateY(5px);
     backdrop-filter: blur(10px);
+  }
+
+  .chat-window {
+    max-height: 600px;
   }
   
   /* Показать меню при активном состоянии */
