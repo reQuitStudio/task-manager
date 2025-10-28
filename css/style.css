@@ -9,6 +9,7 @@
   --info: #2196f3;
   --background: #f5f7fa;
   --surface: #ffffff;
+  --surface-alpha: rgba(255, 255, 255, 0.75);
   --surface-variant: #f8f9fa;
   --on-surface: #1a1a1a;
   --on-surface-variant: #666;
@@ -53,6 +54,7 @@
   --info: #4dabf7;
   --background: #0d1117;
   --surface: #161b22;
+  --surface-alpha: rgba(22, 27, 34, 0.75);
   --surface-variant: #21262d;
   --on-surface: #e6edf3;
   --on-surface-variant: #8b949e;
@@ -86,7 +88,8 @@ body {
 }
 
 header {
-  background: var(--surface);
+  background: var(--surface-alpha);
+  backdrop-filter: blur(10px);
   padding: 15px 15px;
   display: flex;
   justify-content: space-between;
@@ -2012,13 +2015,16 @@ input:focus, select:focus, textarea:focus {
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--surface);
+    background: var(--surface-alpha);
     flex-direction: column;
-    padding: 10px 0;
+    padding: 10px 10px;
     box-shadow: var(--shadow);
     border-radius: var(--radius-md);
     z-index: 999;
     width: 100%;
+    border: 1px solid var(--border);
+    transform: translateY(5px);
+    backdrop-filter: blur(10px);
   }
   
   /* Показать меню при активном состоянии */
@@ -2029,6 +2035,7 @@ input:focus, select:focus, textarea:focus {
   /* Добавить относительное позиционирование для header */
   header {
     position: relative;
+    backdrop-filter: none;
   }
   
   /* Стили для кнопки мобильного меню */

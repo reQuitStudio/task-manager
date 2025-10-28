@@ -12,7 +12,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+
 let allContacts = [];
+let currentChatUid = null;
 
 // Переключение темы
 const themeToggle = document.getElementById('theme-toggle');
@@ -285,8 +287,6 @@ function filterContacts() {
     contactsList.innerHTML = '<div class="no-contacts">Нет доступных контактов</div>';
   }
 }
-
-let currentChatUid = null;
 
 function openChat(uid, udata) {
   currentChatUid = uid;
@@ -1310,7 +1310,6 @@ function updateStreak() {
     });
   });
 }
-
 
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 байт';
