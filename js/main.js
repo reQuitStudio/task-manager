@@ -77,13 +77,6 @@ function showLoginForm() {
   window.location.hash = 'login';
 }
 
-// Показать форму регистрации
-function showRegisterForm() {
-  document.getElementById('register').classList.add('active');
-  document.getElementById('login').classList.remove('active');
-  window.location.hash = 'register';
-}
-
 // Аутентификация
 auth.onAuthStateChanged(user => {
   const currentHash = window.location.hash.substring(1) || 'login';
@@ -1343,6 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.signInWithEmailAndPassword(email, password)
       .then(() => {
         document.getElementById('login-error').textContent = '';
+        window.location.hash = 'profile';
         handleHash();
         updateStreak();
       })
